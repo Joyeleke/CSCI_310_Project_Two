@@ -1,0 +1,29 @@
+{
+  "name": "project2",
+  "version": "1.0.0",
+  "description": "Project 2. Building a 3D game using THREE.js. MATH 310.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joyeleke/CSCI_310_Project_Two.git"
+  },
+  "keywords": [
+    "3d",
+    "game"
+  ],
+  "author": "Jesutofunmi Oyeleke, Jonathan Gonzalez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Joyeleke/CSCI_310_Project_Two/issues"
+  },
+  "homepage": "https://github.com/Joyeleke/CSCI_310_Project_Two#readme",
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.9"
+  }
+}
