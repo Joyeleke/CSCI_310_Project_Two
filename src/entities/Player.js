@@ -1,7 +1,10 @@
 import * as THREE from "three";
 
-class Player {
+class Player extends THREE.Mesh {
     constructor(width, height, depth, color) {
+        const playerGeo = new THREE.BoxGeometry(width, height, depth);
+        const playerMat = new THREE.MeshBasicMaterial({ color: color });
+        super(playerGeo, playerMat);
         this.width = width;
         this.height = height;
         this.depth = depth;
@@ -9,12 +12,8 @@ class Player {
     }
 
     add(scene, x_pos = 0, y_pos = 0) {
-        const playerGeo = new THREE.BoxGeometry(this.width, this.height, this.depth);
-        const playerMat = new THREE.MeshBasicMaterial({ color: this.color });
-        const player = new THREE.Mesh(playerGeo, playerMat);
-        player.position.set(x_pos, y_pos, 0);
-        scene.add(player);
-        return player;
+        this.position.set(x_pos, y_pos, 0);
+        scene.add(this);
     }
 }
 

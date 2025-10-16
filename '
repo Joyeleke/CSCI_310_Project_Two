@@ -3,6 +3,7 @@ import Player from './entities/Player.js';
 import Platform from "./entities/Platform.js";
 
 // TODO: Add walls
+// TODO: Add double jump
 // TODO: Add glider
 // TODO: Add ability to stay on walls
 // TODO: Add collision margin of 0.01
@@ -52,11 +53,6 @@ let canMove = true;
 const platforms = [];
 const players = [];
 
-// Abilities
-let jumpCount = 0;
-let canDoubleJump = false;
-let jumpKeyReleased = true;
-
 // ========================================
 // SCENE SETUP
 // ========================================
@@ -90,6 +86,7 @@ ground.add(scene, 0, groundPositionY);
 platforms.push(ground);
 
 // PLATFORMS
+
 const platforms_dim = [[-5, 8, 3, 0.3], [-1, 1, 2.5, 0.3], [3, 1.5, 3, 0.3]];
 
 for (let platform of platforms_dim) {
@@ -103,46 +100,67 @@ for (let platform of platforms_dim) {
 // COLLISION DETECTION
 // ========================================
 
-function checkCollision(platform, prevX, prevY) {
-  const pBottom = player1.position.y - playerHeight / 2;
-  const pTop = player1.position.y + playerHeight / 2;
-  const pLeft = player1.position.x - playerWidth / 2;
-  const pRight = player1.position.x + playerWidth / 2;
+function checkPlatformCollision(platform, prevX, prevY) {
+  const playerBottom = player1.position.y - playerHeight / 2;
+  const playerTop = player1.position.y + playerHeight / 2;
+  const playerLeft = player1.position.x - playerWidth / 2;
+  const playerRight = player1.position.x + playerWidth / 2;
 
-  const prevBottom = prevY - playerHeight / 2;
-  const prevTop = prevY + playerHeight / 2;
-  const prevLeft = prevX - playerWidth / 2;
-  const prevRight = prevX + playerWidth / 2;
+  const prevplayerLeft = prevX - playerWidth / 2;
+  const prevplayerRight = prevX + playerWidth / 2;
+  const prevplayerBottom = prevY - playerHeight / 2;
+  const prevplayerTop = prevY + playerHeight / 2;
 
-  const platTop = platform.position.y + platform.userData.height / 2;
-  const platBottom = platform.position.y - platform.userData.height / 2;
-  const platLeft = platform.position.x - platform.userData.width / 2;
-  const platRight = platform.position.x + platform.userData.width / 2;
+  const platformTop = platform.position.y + platform.userData.height / 2;
+  const platformBottom = platform.position.y - platform.userData.height / 2;
+  const platformLeft = platform.position.x - platform.userData.width / 2;
+  const platformRight = platform.position.x + platform.userData.width / 2;
 
+  // Check if there's any overlap at all
   const isOverlapping =
-    pRight > platLeft &&
-    pLeft < platRight &&
-    pBottom < platTop &&
-    pTop > platBottom;
+    playerRight > platformLeft &&
+    playerLeft < platformRight &&
+    playerBottom < platformTop &&
+    playerTop > platformBottom;
 
   if (!isOverlapping) return null;
 
-  const wasAbove = prevBottom >= platTop;
-  const wasBelow = prevTop <= platBottom;
-  const wasLeft = prevRight <= platLeft;
-  const wasRight = prevLeft >= platRight;
+  // Determine which side was hit based on previous position
+  const wasAbove = prevplayerBottom >= platformTop;
+  const wasBelow = prevplayerTop <= platformBottom;
+  const wasLeft = prevplayerRight <= platformLeft;
+  const wasRight = prevplayerLeft >= platformRight;
 
+  // Return collision info based on where the player came from
   if (wasAbove && velocityY <= 0) {
-    return { side: 'top', position: platTop };
+    return { side: 'top', position: platformTop };
   } else if (wasBelow && velocityY > 0) {
-    return { side: 'bottom', position: platBottom };
+    return { side: 'bottom', position: platformBottom };
   } else if (wasLeft) {
-    return { side: 'left', position: platLeft };
+    return { side: 'left', position: platformLeft };
   } else if (wasRight) {
-    return { side: 'right', position: platRight };
+    return { side: 'right', position: platformRight };
   }
 
   return null;
+}
+
+function checkGroundCollision() {
+  const playerBottom = player1.position.y - playerHeight / 2;
+  const playerLeft = player1.position.x - playerWidth / 2;
+  const playerRight = player1.position.x + playerWidth / 2;
+
+  const groundTop = ground.position.y + groundHeight / 2;
+  const groundLeft = ground.position.x - groundWidth / 2;
+  const groundRight = ground.position.x + groundWidth / 2;
+
+  // Check if player is horizontally overlapping with ground
+  const isHorizontallyAligned = playerRight > groundLeft && playerLeft < groundRight;
+
+  // Check if player is touching or below ground top
+  const isTouchingGround = playerBottom <= groundTop;
+
+  return isHorizontallyAligned && isTouchingGround;
 }
 
 // ========================================
@@ -158,12 +176,7 @@ const keys = {};
 // ========================================
 
 window.addEventListener('keydown', (e) => keys[e.code] = true);
-window.addEventListener('keyup', (e) => {
-  keys[e.code] = false;
-  if (e.code === "KeyW") {
-    jumpKeyReleased = true;
-  }
-});
+window.addEventListener('keyup', (e) => keys[e.code] = false);
 
 // ========================================
 // GAME LOOP
@@ -176,72 +189,69 @@ function animate() {
   requestAnimationFrame(animate);
 
   const currentTime = performance.now();
-  const deltaTime = (currentTime - lastTime) / 1000;
+  const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
   lastTime = currentTime;
 
+  // Store previous position
   const prevX = player1.position.x;
   const prevY = player1.position.y;
 
-  // Horizontal movement
+  // Movement (A/D)
   if (keys['KeyA'] && canMove) player1.position.x -= moveSpeed * deltaTime;
   if (keys['KeyD'] && canMove) player1.position.x += moveSpeed * deltaTime;
 
-  // Check horizontal collisions
+  // Check horizontal platform collisions after movement
   for (const platform of platforms) {
-    const collision = checkCollision(platform, prevX, prevY);
+    const collision = checkPlatformCollision(platform, prevX, prevY);
     if (collision && (collision.side === 'left' || collision.side === 'right')) {
-      player1.position.x = collision.side === 'left'
-        ? collision.position - playerWidth / 2
-        : collision.position + playerWidth / 2;
+      if (collision.side === 'left') {
+        player1.position.x = collision.position - playerWidth / 2;
+      } else if (collision.side === 'right') {
+        player1.position.x = collision.position + playerWidth / 2;
+      }
     }
   }
 
-  // Jump
-  if (keys['KeyW'] && canMove && jumpKeyReleased) {
-    // First jump
-    if (isOnGround) {
-      velocityY = jumpStrength;
-      isOnGround = false;
-      jumpCount = 1;
-      canDoubleJump = true;
-      jumpKeyReleased = false;
-    }
-    // Second jump (after releasing the key)
-    else if (canDoubleJump && jumpCount === 1) {
-      velocityY = jumpStrength * 0.85; // optional: slightly weaker
-      jumpCount = 2;
-      canDoubleJump = false; // prevent third jump
-      jumpKeyReleased = false;
-    }
+  // Jump (W)
+  if (keys['KeyW'] && isOnGround && canMove) {
+    velocityY = jumpStrength;
+    isOnGround = false;
   }
 
-  // Fast fall
+  // Fast fall (S)
   if (keys['KeyS'] && !isOnGround && canMove) velocityY = fastFall;
 
-  // Apply gravity and vertical movement
+  // Apply gravity
   velocityY += gravity * deltaTime;
   player1.position.y += velocityY * deltaTime;
 
-  // Check vertical collisions
+  // Check platform collisions (all sides)
   isOnGround = false;
   for (const platform of platforms) {
-    const collision = checkCollision(platform, prevX, prevY);
+    const collision = checkPlatformCollision(platform, prevX, prevY);
     if (collision) {
       if (collision.side === 'top') {
+        // Landing on top of platform
         player1.position.y = collision.position + playerHeight / 2;
         velocityY = 0;
         isOnGround = true;
-        jumpCount = 0;
-        canDoubleJump = false;
-        jumpKeyReleased = true;
       } else if (collision.side === 'bottom') {
+        // Hit bottom of platform (head bonk)
         player1.position.y = collision.position - playerHeight / 2;
         velocityY = 0;
       }
     }
   }
 
-  // Death condition (fall below screen)
+  // Ground collision
+  if (checkGroundCollision()) {
+    const groundTop = ground.position.y + groundHeight / 2;
+    player1.position.y = groundTop + playerHeight / 2;
+    velocityY = 0;
+    isOnGround = true;
+  }
+
+  // Death/reset condition
   if (player1.position.y - playerHeight / 2 < groundPositionY) {
     player1.position.y = groundPositionY + playerHeight / 2;
     canMove = false;
@@ -249,19 +259,16 @@ function animate() {
     isOnGround = true;
 
     setTimeout(() => {
+      canMove = true;
       player1.position.x = playerStartPositionX;
       player1.position.y = playerStartPositionY;
-      canMove = true;
-      isOnGround = false;
     }, 500);
   }
 
-
-  // Update counter
+  // Update Y counter
   if (counterDiv) {
-    const playerCurrentY = player1.position.y + 6.9;
-    const displayY = (playerCurrentY > 0) ? playerCurrentY : 0;
-    counterDiv.textContent = `${displayY.toFixed(2)} m`;
+    let playerPosition = Number(player1.position.y) + 6.9;
+    counterDiv.textContent = `Y: ${playerPosition.toFixed(2)}`;
   }
 
   renderer.render(scene, camera);
