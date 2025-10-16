@@ -8,7 +8,7 @@ class Player {
         this.color = color;
     }
 
-    add(x_pos, y_pos, scene) {
+    add(scene, x_pos = 0, y_pos = 0) {
         const playerGeo = new THREE.BoxGeometry(this.width, this.height, this.depth);
         const playerMat = new THREE.MeshBasicMaterial({ color: this.color });
         const player = new THREE.Mesh(playerGeo, playerMat);

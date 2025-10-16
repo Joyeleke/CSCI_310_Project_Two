@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-class Platform {
+class Wall {
     constructor(x, y, width, height, color = "blue") {
         this.x = x;
         this.y = y;
@@ -22,4 +22,4 @@ class Platform {
     }
 }
 
-export default Platform;
+export default Wall;

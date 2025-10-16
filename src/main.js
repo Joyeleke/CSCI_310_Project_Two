@@ -74,14 +74,11 @@ document.body.appendChild(renderer.domElement);
 
 // player
 const player1 = new Player(playerWidth, playerHeight, playerDepth, playerColor);
-const player = player1.add(playerStartPositionX, playerStartPositionY, scene);
+const player = player1.add(scene, playerStartPositionX, playerStartPositionY);
 
 // Ground bar
-const groundGeo = new THREE.PlaneGeometry(groundWidth, groundHeight);
-const groundMat = new THREE.MeshBasicMaterial({ color: groundColor });
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.position.y = groundPositionY;
-scene.add(ground);
+const groundPlatform = new Platform(0, groundPositionY, groundWidth, groundHeight, groundColor);
+const ground = groundPlatform.add(scene);
 
 // ========================================
 // PLATFORMS
@@ -93,7 +90,7 @@ const platforms = [];
 for (let platform of platforms_dim) {
   const [x, y, width, height] = platform;
   const new_platform = new Platform(x, y, width, height, platformColor);
-  const np = new_platform.add(0, groundPositionY, scene);
+  const np = new_platform.add(scene, 0, groundPositionY);
   platforms.push(np);
 }
 
