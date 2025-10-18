@@ -79,7 +79,7 @@ const camera = new THREE.OrthographicCamera(
 camera.position.set(0, 0, 10);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight, false);
 document.body.appendChild(renderer.domElement);
 
 // ========================================
@@ -354,5 +354,5 @@ window.addEventListener("resize", () => {
   }
 
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
 });
