@@ -181,7 +181,7 @@ const keys = {};
 window.addEventListener("keydown", (e) => (keys[e.code] = true));
 window.addEventListener("keyup", (e) => {
   keys[e.code] = false;
-  if (e.code === "KeyW") {
+  if (e.code === "KeyW" || e.code === "ArrowUp") {
     jumpKeyReleased = true;
   }
 });
@@ -210,8 +210,10 @@ function animate() {
   const prevY = player1.position.y;
 
   // Horizontal movement
-  if (keys["KeyA"] && canMove) player1.position.x -= moveSpeed * deltaTime;
-  if (keys["KeyD"] && canMove) player1.position.x += moveSpeed * deltaTime;
+  if ((keys["KeyA"] || keys["ArrowLeft"]) && canMove)
+    player1.position.x -= moveSpeed * deltaTime;
+  if ((keys["KeyD"] || keys["ArrowRight"]) && canMove)
+    player1.position.x += moveSpeed * deltaTime;
 
   // Check horizontal collisions
   for (const platform of platforms) {
@@ -228,7 +230,7 @@ function animate() {
   }
 
   // Jump
-  if (keys["KeyW"] && canMove && jumpKeyReleased) {
+  if ((keys["KeyW"] || keys["ArrowUp"]) && canMove && jumpKeyReleased) {
     // First jump
     if (isOnGround) {
       velocityY = jumpStrength;
@@ -247,7 +249,8 @@ function animate() {
   }
 
   // Fast fall
-  if (keys["KeyS"] && !isOnGround && canMove) velocityY = fastFall;
+  if ((keys["KeyS"] || keys["ArrowDown"]) && !isOnGround && canMove)
+    velocityY = fastFall;
 
   // Apply gravity and vertical movement
   velocityY += gravity * deltaTime;
