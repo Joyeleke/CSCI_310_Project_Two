@@ -1,6 +1,7 @@
-import * as THREE from 'three';
-import Player from './entities/Player.js';
+import * as THREE from "three";
+import Player from "./entities/Player.js";
 import Platform from "./entities/Platform.js";
+import { LEVELS, LEVEL_HEIGHT } from "./data/levelData.js";
 
 // TODO: Add walls
 // TODO: Add glider
@@ -33,7 +34,7 @@ const playerDepth = 0.2;
 
 // Physics
 const gravity = -25; // Units per second squared
-const jumpStrength = 8; // Units per second
+const jumpStrength = 15; // Units per second
 const fastFall = -15; // Units per second
 const moveSpeed = 7; // Units per second
 const groundLevel = groundPositionY; // Top of the bar
@@ -42,15 +43,18 @@ const groundLevel = groundPositionY; // Top of the bar
 const bgColor = 0x343434;
 const playerColor = 0x00ff88;
 const groundColor = 0x555555;
-const platformColor = 0x4488ff;
 
-const playerStartPositionX = - groundWidth / 2 + playerWidth / 2 + 0.5;
+const playerStartPositionX = -groundWidth / 2 + playerWidth / 2 + 0.5;
 const playerStartPositionY = groundLevel + playerHeight / 2 + 1;
 
 let canMove = true;
 
 const platforms = [];
 const players = [];
+
+// Level tracking
+let currentLevel = 1;
+const loadedLevels = new Set();
 
 // Abilities
 let jumpCount = 0;
@@ -65,9 +69,12 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(bgColor);
 
 const camera = new THREE.OrthographicCamera(
-  -sceneWidth / 2, sceneWidth / 2,
-  sceneHeight / 2, -sceneHeight / 2,
-  0.1, 100
+  -sceneWidth / 2,
+  sceneWidth / 2,
+  sceneHeight / 2,
+  -sceneHeight / 2,
+  0.1,
+  100
 );
 camera.position.set(0, 0, 10);
 
@@ -89,15 +96,29 @@ const ground = new Platform(groundWidth, groundHeight, groundColor);
 ground.add(scene, 0, groundPositionY);
 platforms.push(ground);
 
-// PLATFORMS
-const platforms_dim = [[-5, 8, 3, 0.3], [-1, 1, 2.5, 0.3], [3, 1.5, 3, 0.3]];
+// ========================================
+// LEVEL MANAGEMENT
+// ========================================
 
-for (let platform of platforms_dim) {
-  const [x, y, width, height] = platform;
-  const new_platform = new Platform(width, height, platformColor);
-  new_platform.add(scene, x, y + groundPositionY);
-  platforms.push(new_platform);
+function spawnLevel(levelNumber) {
+  if (levelNumber < 1 || levelNumber > LEVELS.length) return;
+  if (loadedLevels.has(levelNumber)) return;
+
+  const level = LEVELS[levelNumber - 1];
+
+  for (let platformData of level.platforms) {
+    const [x, yRelative, width, height] = platformData;
+    const new_platform = new Platform(width, height, level.color);
+
+    new_platform.add(scene, x, yRelative + level.startY + groundPositionY);
+    platforms.push(new_platform);
+  }
+
+  loadedLevels.add(levelNumber);
 }
+
+// Load initial level
+spawnLevel(1);
 
 // ========================================
 // COLLISION DETECTION
@@ -133,13 +154,13 @@ function checkCollision(platform, prevX, prevY) {
   const wasRight = prevLeft >= platRight;
 
   if (wasAbove && velocityY <= 0) {
-    return { side: 'top', position: platTop };
+    return { side: "top", position: platTop };
   } else if (wasBelow && velocityY > 0) {
-    return { side: 'bottom', position: platBottom };
+    return { side: "bottom", position: platBottom };
   } else if (wasLeft) {
-    return { side: 'left', position: platLeft };
+    return { side: "left", position: platLeft };
   } else if (wasRight) {
-    return { side: 'right', position: platRight };
+    return { side: "right", position: platRight };
   }
 
   return null;
@@ -157,8 +178,8 @@ const keys = {};
 // INPUT HANDLERS
 // ========================================
 
-window.addEventListener('keydown', (e) => keys[e.code] = true);
-window.addEventListener('keyup', (e) => {
+window.addEventListener("keydown", (e) => (keys[e.code] = true));
+window.addEventListener("keyup", (e) => {
   keys[e.code] = false;
   if (e.code === "KeyW") {
     jumpKeyReleased = true;
@@ -169,7 +190,13 @@ window.addEventListener('keyup', (e) => {
 // GAME LOOP
 // ========================================
 
-const counterDiv = document.getElementById('counter');
+const counterDiv = document.getElementById("counter");
+const levelDiv = document.getElementById("level");
+
+if (levelDiv) {
+  levelDiv.textContent = "Level 1";
+}
+
 let lastTime = performance.now();
 
 function animate() {
@@ -183,21 +210,25 @@ function animate() {
   const prevY = player1.position.y;
 
   // Horizontal movement
-  if (keys['KeyA'] && canMove) player1.position.x -= moveSpeed * deltaTime;
-  if (keys['KeyD'] && canMove) player1.position.x += moveSpeed * deltaTime;
+  if (keys["KeyA"] && canMove) player1.position.x -= moveSpeed * deltaTime;
+  if (keys["KeyD"] && canMove) player1.position.x += moveSpeed * deltaTime;
 
   // Check horizontal collisions
   for (const platform of platforms) {
     const collision = checkCollision(platform, prevX, prevY);
-    if (collision && (collision.side === 'left' || collision.side === 'right')) {
-      player1.position.x = collision.side === 'left'
-        ? collision.position - playerWidth / 2
-        : collision.position + playerWidth / 2;
+    if (
+      collision &&
+      (collision.side === "left" || collision.side === "right")
+    ) {
+      player1.position.x =
+        collision.side === "left"
+          ? collision.position - playerWidth / 2
+          : collision.position + playerWidth / 2;
     }
   }
 
   // Jump
-  if (keys['KeyW'] && canMove && jumpKeyReleased) {
+  if (keys["KeyW"] && canMove && jumpKeyReleased) {
     // First jump
     if (isOnGround) {
       velocityY = jumpStrength;
@@ -216,7 +247,7 @@ function animate() {
   }
 
   // Fast fall
-  if (keys['KeyS'] && !isOnGround && canMove) velocityY = fastFall;
+  if (keys["KeyS"] && !isOnGround && canMove) velocityY = fastFall;
 
   // Apply gravity and vertical movement
   velocityY += gravity * deltaTime;
@@ -227,14 +258,14 @@ function animate() {
   for (const platform of platforms) {
     const collision = checkCollision(platform, prevX, prevY);
     if (collision) {
-      if (collision.side === 'top') {
+      if (collision.side === "top") {
         player1.position.y = collision.position + playerHeight / 2;
         velocityY = 0;
         isOnGround = true;
         jumpCount = 0;
         canDoubleJump = false;
         jumpKeyReleased = true;
-      } else if (collision.side === 'bottom') {
+      } else if (collision.side === "bottom") {
         player1.position.y = collision.position - playerHeight / 2;
         velocityY = 0;
       }
@@ -256,11 +287,41 @@ function animate() {
     }, 500);
   }
 
+  // Camera following Player
+  const targetCameraY = player1.position.y;
+  camera.position.y += (targetCameraY - camera.position.y) * 0.1;
+
+  // Detect which level the player is currently in
+  const playerY = player1.position.y - groundPositionY;
+  const detectedLevel = Math.floor(playerY / LEVEL_HEIGHT) + 1;
+  const levelInBounds = Math.max(1, Math.min(10, detectedLevel));
+
+  // Update current level if player moved to a new level
+  if (levelInBounds !== currentLevel) {
+    currentLevel = levelInBounds;
+    if (levelDiv) {
+      levelDiv.textContent = `Level ${currentLevel}`;
+    }
+    
+    // Update background color for new level
+    const level = LEVELS[currentLevel - 1];
+    if (level && level.backgroundColor) {
+      scene.background.setHex(level.backgroundColor);
+    }
+  }
+
+  // Load current level and next 2 levels ahead
+  const maxLevelToLoad = Math.min(currentLevel + 2, 10);
+  for (let level = currentLevel; level <= maxLevelToLoad; level++) {
+    if (!loadedLevels.has(level)) {
+      spawnLevel(level);
+    }
+  }
 
   // Update counter
   if (counterDiv) {
     const playerCurrentY = player1.position.y + 6.9;
-    const displayY = (playerCurrentY > 0) ? playerCurrentY : 0;
+    const displayY = playerCurrentY > 0 ? playerCurrentY : 0;
     counterDiv.textContent = `${displayY.toFixed(2)} m`;
   }
 
@@ -273,7 +334,7 @@ animate();
 // WINDOW RESIZE HANDLER
 // ========================================
 
-window.addEventListener('resize', () => {
+window.addEventListener("resize", () => {
   const windowAspect = window.innerWidth / window.innerHeight;
 
   if (windowAspect > targetAspect) {
