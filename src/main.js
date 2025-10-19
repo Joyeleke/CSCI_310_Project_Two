@@ -109,6 +109,49 @@ ground.add(scene, 0, groundPositionY);
 platforms.push(ground);
 
 // ========================================
+// STORY/START/END OVERLAY
+// ========================================
+
+const overlayEl = document.getElementById("overlay");
+const startBtn = document.getElementById("start-btn");
+
+let isPaused = true; 
+
+function hideOverlay() {
+  if (overlayEl) overlayEl.style.display = "none";
+}
+
+function showOverlay() {
+  if (overlayEl) overlayEl.style.display = "flex";
+}
+
+function startGame() {
+  const select = document.getElementById("difficulty");
+  if (select) {
+    const v = select.value;
+    jumpStrength = v === "easy" ? 20 : v === "hard" ? 8.5 : 15;
+  }
+  hideOverlay();
+  isPaused = false;
+  canMove = true;
+}
+
+if (overlayEl) {
+  showOverlay();
+  canMove = false;
+}
+
+if (startBtn) {
+  startBtn.addEventListener("click", startGame);
+}
+
+window.addEventListener("keydown", (e) => {
+  if (isPaused && (e.code === "Space")) {
+    startGame();
+  }
+});
+
+// ========================================
 // LEVEL MANAGEMENT
 // ========================================
 
@@ -186,17 +229,6 @@ let velocityY = 0;
 let isOnGround = false;
 const keys = {};
 
-// Minimal reset when difficulty changes
-function resetGame() {
-  player1.position.x = playerStartPositionX;
-  player1.position.y = playerStartPositionY;
-  velocityY = 0;
-  isOnGround = false;
-  jumpCount = 0;
-  canDoubleJump = false;
-  jumpKeyReleased = true;
-}
-
 // ========================================
 // INPUT HANDLERS
 // ========================================
@@ -221,23 +253,8 @@ window.addEventListener("keyup", (e) => {
 
 const counterDiv = document.getElementById("counter");
 const levelDiv = document.getElementById("level");
-const difficultySelect = document.getElementById("difficulty");
 
-if (levelDiv) {
-  levelDiv.textContent = "Level 1";
-}
-
-if (difficultySelect) {
-  const applyScale = () => {
-    const v = difficultySelect.value;
-    jumpStrength = v === "easy" ? 20 : v === "hard" ? 8.5 : 15;
-  };
-  applyScale();
-  difficultySelect.addEventListener("change", () => {
-    applyScale();
-    resetGame();
-  });
-}
+if (levelDiv) levelDiv.textContent = "Level 1";
 
 
 let lastTime = performance.now();
@@ -248,6 +265,12 @@ function animate() {
   const currentTime = performance.now();
   const deltaTime = (currentTime - lastTime) / 1000;
   lastTime = currentTime;
+
+  // Pause all gameplay updates until the user starts the game
+  if (isPaused) {
+    renderer.render(scene, camera);
+    return;
+  }
 
   const prevX = player1.position.x;
   const prevY = player1.position.y;

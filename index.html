@@ -11,13 +11,23 @@
     <div id="app"></div>
     <div id="counter" style="position: fixed; top: 20px; left: 20px; color: white; font-family: monospace; font-size: 24px;"></div>
     <div id="level" style="position: fixed; top: 20px; right: 20px; color: white; font-family: monospace; font-size: 24px;"></div>
-    <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px;">
-      Difficulty:
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium" selected>Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+    <div id="overlay" style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); color:#fff; font-family: monospace; text-align:center; padding:24px;">
+      <div>
+        <h1 id="overlay-title" style="margin:0 0 12px 0; font-size:28px;">Cube Chamber Rise</h1>
+        <p id="overlay-text" style="max-width:720px; margin:0 auto 16px; line-height:1.4;">
+          You are a cube climbing the chambers of a forgotten tower. Reach higher, avoid the fall, and see how far you can go.
+        </p>
+        <p id="overlay-msg" style="opacity:0.9; margin-bottom:16px;">Press Space or Click Start</p>
+        <div style="margin-bottom:12px;">
+          <label for="difficulty" style="margin-right:8px;">Difficulty:</label>
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <button id="start-btn" style="padding:8px 16px; font-family:inherit; cursor:pointer;">Start</button>
+      </div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
