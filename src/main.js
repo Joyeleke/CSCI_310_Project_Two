@@ -24,28 +24,29 @@ const sceneWidth = sceneHeight * targetAspect; // ~17.78
 
 // Ground bar
 const groundWidth = sceneWidth * 0.9;
-const groundHeight = 0.4;
-const groundPositionY = -sceneHeight / 2;
+const groundHeight = 0.3;
+const groundPositionY = -sceneHeight / 2 - 0.6;
+const groundTopY = groundPositionY + groundHeight / 2; 
 
 // player dimensions
 const playerWidth = 0.8;
 const playerHeight = 0.8;
-const playerDepth = 0.2;
+const playerDepth = 0.8;
 
 // Physics
 const gravity = -25; // Units per second squared
 let jumpStrength = 15; // Units per second
 const fastFall = -15; // Units per second
 const moveSpeed = 7; // Units per second
-const groundLevel = groundPositionY; // Top of the bar
 
 // Colors
 const bgColor = 0x343434;
 const playerColor = 0x00ff88;
-const groundColor = 0x555555;
+const groundColor = 0x8a9b68;
 
-const playerStartPositionX = -groundWidth / 2 + playerWidth / 2 + 0.5;
-const playerStartPositionY = groundLevel + playerHeight / 2 + 1;
+// Start the player at the horizontal center of the ground.
+const playerStartPositionX = 0;
+const playerStartPositionY = groundTopY + playerHeight / 2 + 0.05;
 
 let canMove = true;
 
@@ -68,19 +69,30 @@ let jumpKeyReleased = true;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(bgColor);
 
-const camera = new THREE.OrthographicCamera(
-  -sceneWidth / 2,
-  sceneWidth / 2,
-  sceneHeight / 2,
-  -sceneHeight / 2,
-  0.1,
-  100
-);
-camera.position.set(0, 0, 10);
+// Perspective camera
+const fov = 60;
+const aspect = window.innerWidth / window.innerHeight;
+const near = 0.1;
+const far = 1000;
+const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+camera.position.set(playerStartPositionX, playerStartPositionY + 4, 15);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(10, 10, 5);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 100;
+scene.add(dirLight);
 
 // ========================================
 // GAME OBJECTS
@@ -92,7 +104,7 @@ player1.add(scene, playerStartPositionX, playerStartPositionY);
 players.push(player1);
 
 // GROUND BAR
-const ground = new Platform(groundWidth, groundHeight, groundColor);
+const ground = new Platform(groundWidth, groundHeight, groundColor, 7);
 ground.add(scene, 0, groundPositionY);
 platforms.push(ground);
 
@@ -321,9 +333,13 @@ function animate() {
     }, 500);
   }
 
-  // Camera following Player
-  const targetCameraY = player1.position.y;
-  camera.position.y += (targetCameraY - camera.position.y) * 0.1;
+  // Camera following Player 1
+  const targetCameraY = player1.position.y + 4;
+
+  camera.position.y += (targetCameraY - camera.position.y) * 0.08;
+  camera.position.x += (player1.position.x - camera.position.x) * 0.08;
+  
+  camera.lookAt(player1.position.x, player1.position.y, 0);
 
   // Detect which level the player is currently in
   const playerY = player1.position.y - groundPositionY;
@@ -369,24 +385,7 @@ animate();
 // ========================================
 
 window.addEventListener("resize", () => {
-  const windowAspect = window.innerWidth / window.innerHeight;
-
-  if (windowAspect > targetAspect) {
-    // Window is wider than target - fit to height
-    const width = sceneHeight * windowAspect;
-    camera.left = -width / 2;
-    camera.right = width / 2;
-    camera.top = sceneHeight / 2;
-    camera.bottom = -sceneHeight / 2;
-  } else {
-    // Window is taller than target - fit to width
-    const height = sceneWidth / windowAspect;
-    camera.left = -sceneWidth / 2;
-    camera.right = sceneWidth / 2;
-    camera.top = height / 2;
-    camera.bottom = -height / 2;
-  }
-
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
