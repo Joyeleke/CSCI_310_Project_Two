@@ -34,7 +34,7 @@ const playerDepth = 0.2;
 
 // Physics
 const gravity = -25; // Units per second squared
-const jumpStrength = 15; // Units per second
+let jumpStrength = 15; // Units per second
 const fastFall = -15; // Units per second
 const moveSpeed = 7; // Units per second
 const groundLevel = groundPositionY; // Top of the bar
@@ -174,11 +174,28 @@ let velocityY = 0;
 let isOnGround = false;
 const keys = {};
 
+// Minimal reset when difficulty changes
+function resetGame() {
+  player1.position.x = playerStartPositionX;
+  player1.position.y = playerStartPositionY;
+  velocityY = 0;
+  isOnGround = false;
+  jumpCount = 0;
+  canDoubleJump = false;
+  jumpKeyReleased = true;
+}
+
 // ========================================
 // INPUT HANDLERS
 // ========================================
 
-window.addEventListener("keydown", (e) => (keys[e.code] = true));
+window.addEventListener("keydown", (e) => {
+  if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+    e.preventDefault();
+  }
+  keys[e.code] = true;
+});
+
 window.addEventListener("keyup", (e) => {
   keys[e.code] = false;
   if (e.code === "KeyW" || e.code === "ArrowUp") {
@@ -192,10 +209,24 @@ window.addEventListener("keyup", (e) => {
 
 const counterDiv = document.getElementById("counter");
 const levelDiv = document.getElementById("level");
+const difficultySelect = document.getElementById("difficulty");
 
 if (levelDiv) {
   levelDiv.textContent = "Level 1";
 }
+
+if (difficultySelect) {
+  const applyScale = () => {
+    const v = difficultySelect.value;
+    jumpStrength = v === "easy" ? 20 : v === "hard" ? 8.5 : 15;
+  };
+  applyScale();
+  difficultySelect.addEventListener("change", () => {
+    applyScale();
+    resetGame();
+  });
+}
+
 
 let lastTime = performance.now();
 
