@@ -56,6 +56,8 @@ const players = [];
 // Level tracking
 let currentLevel = 1;
 const loadedLevels = new Set();
+let selectedDifficultyLabel = "Medium";
+let hasWon = false;
 
 // Abilities
 let jumpCount = 0;
@@ -114,6 +116,9 @@ platforms.push(ground);
 
 const overlayEl = document.getElementById("overlay");
 const startBtn = document.getElementById("start-btn");
+const overlayTitle = document.getElementById("overlay-title");
+const overlayText = document.getElementById("overlay-text");
+const overlayMsg = document.getElementById("overlay-msg");
 
 let isPaused = true; 
 
@@ -130,10 +135,19 @@ function startGame() {
   if (select) {
     const v = select.value;
     jumpStrength = v === "easy" ? 20 : v === "hard" ? 8.5 : 15;
+    selectedDifficultyLabel = v === "easy" ? "Easy" : v === "hard" ? "Hard" : "Medium";
   }
   hideOverlay();
   isPaused = false;
   canMove = true;
+  hasWon = false;
+
+  player1.position.x = playerStartPositionX;
+  player1.position.y = playerStartPositionY;
+  velocityY = 0;
+  isOnGround = false;
+
+  if (levelDiv) levelDiv.textContent = `Level 1/${LEVELS.length} • ${selectedDifficultyLabel}`;
 }
 
 if (overlayEl) {
@@ -254,7 +268,7 @@ window.addEventListener("keyup", (e) => {
 const counterDiv = document.getElementById("counter");
 const levelDiv = document.getElementById("level");
 
-if (levelDiv) levelDiv.textContent = "Level 1";
+if (levelDiv) levelDiv.textContent = `Level 1/${LEVELS.length} • ${selectedDifficultyLabel}`;
 
 
 let lastTime = performance.now();
@@ -367,14 +381,12 @@ function animate() {
   // Detect which level the player is currently in
   const playerY = player1.position.y - groundPositionY;
   const detectedLevel = Math.floor(playerY / LEVEL_HEIGHT) + 1;
-  const levelInBounds = Math.max(1, Math.min(10, detectedLevel));
+  const levelInBounds = Math.max(1, Math.min(LEVELS.length, detectedLevel));
 
   // Update current level if player moved to a new level
   if (levelInBounds !== currentLevel) {
     currentLevel = levelInBounds;
-    if (levelDiv) {
-      levelDiv.textContent = `Level ${currentLevel}`;
-    }
+    if (levelDiv) levelDiv.textContent = `Level ${currentLevel}/${LEVELS.length} • ${selectedDifficultyLabel}`;
     
     // Update background color for new level
     const level = LEVELS[currentLevel - 1];
@@ -384,11 +396,18 @@ function animate() {
   }
 
   // Load current level and next 2 levels ahead
-  const maxLevelToLoad = Math.min(currentLevel + 2, 10);
+  const maxLevelToLoad = Math.min(currentLevel + 2, LEVELS.length);
   for (let level = currentLevel; level <= maxLevelToLoad; level++) {
     if (!loadedLevels.has(level)) {
       spawnLevel(level);
     }
+  }
+
+  // Win detection: if player crosses above the final level top
+  if (!hasWon && player1.position.y - groundPositionY >= LEVEL_HEIGHT * LEVELS.length) {
+    hasWon = true;
+    showWinOverlay(); 
+    isPaused = true; 
   }
 
   // Update counter
@@ -402,6 +421,18 @@ function animate() {
 }
 
 animate();
+
+// ========================================
+// WIN OVERLAY (minimal)
+// ========================================
+
+function showWinOverlay() {
+  if (overlayTitle) overlayTitle.textContent = "You Win!";
+  if (overlayText) overlayText.textContent = "Great climb. Want to run it again or try a different difficulty?";
+  if (overlayMsg) overlayMsg.textContent = "Press Space or Click Restart";
+  if (startBtn) startBtn.textContent = "Restart";
+  showOverlay();
+}
 
 // ========================================
 // WINDOW RESIZE HANDLER
