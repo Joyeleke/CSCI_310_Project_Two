@@ -39,7 +39,7 @@ This project challenges you to design and develop a 3D interactive game experien
 
 -  **What do you do?** 
     - **Name**: Jonathan Gonzalez
-    - **Action**: 
+    - **Action**: Linking current project folder to GitHub repository. Create vite project using npm.
 
 **Iteration 2:**
 
@@ -47,7 +47,7 @@ This project challenges you to design and develop a 3D interactive game experien
 
 -  **What do you do?** 
     - **Name**: Jonathan Gonzalez
-    - **Action**: 
+    - **Action**: Using THREE.js, I created a rectangle which the user could control using awsd. The platforms were also rectangles with different sizes. I also added coallision detection between the player and the platforms. If the player falls outside of "ground", the program resets the user's position to the start of the game. Finally, I implemented movement mechanics such as moving side to side, also jumping and rapid fall.
 
 **Iteration 3:**
 
@@ -55,7 +55,7 @@ This project challenges you to design and develop a 3D interactive game experien
 
 -  **What do you do?** 
     - **Name**: Jonathan Gonzalez
-    - **Action**: 
+    - **Action**: After realizing that creating a new platform is really tedious, I decided to move into a factory model. This model has the ability to create multiple objects from the same type. With this logic, I created a class for each of the entities/objects in the game. In this case, the objects are: Platforms, Walls, Player, Spikes. Even though all of them share similar behavior, the differ in some details. In the main file, the program starts by building the world (creating and placing the entities into the main scene). After this, the program constantly keeps track of the user's position and checks for collisions to any of the objects.
 
 **Iteration 4:**
 
@@ -63,7 +63,7 @@ This project challenges you to design and develop a 3D interactive game experien
 
 -  **What do you do?** 
     - **Name**: Jonathan Gonzalez
-    - **Action**: 
+    - **Action**: Using the same logic as jump, the player is able to jump a second time, however, the second jump has 85% power from the initial jump. The main feature is the program is able to identify when the user stops pressing w. Thus, when the user is not on ground, the player is able to jump a second time reaching a higher height. 
 
 **Iteration 5:**
 
