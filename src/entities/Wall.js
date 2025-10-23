@@ -1,24 +1,26 @@
 import * as THREE from "three";
 
-class Wall {
-    constructor(x, y, width, height, color = "blue") {
-        this.x = x;
-        this.y = y;
+class Wall extends THREE.Mesh {
+    constructor(width, height, color = "blue", depth = 2) {
+        const wallGeo = new THREE.BoxGeometry(width, height, depth);
+        const wallMat = new THREE.MeshStandardMaterial({ color });
+        super(wallGeo, wallMat);
         this.width = width;
         this.height = height;
+        this.depth = depth;
         this.color = color;
+        this.castShadow = false;
+        this.receiveShadow = true;
     }
 
-    add(scene, x_rel = 0, y_rel = 0) {
-        const x_pos = x_rel + this.x;
-        const y_pos = y_rel + this.y;
-        const platformGeo = new THREE.PlaneGeometry(this.width, this.height);
-        const platformMat = new THREE.MeshBasicMaterial({ color: this.color });
-        const platform = new THREE.Mesh(platformGeo, platformMat);
-        platform.position.set(x_pos, y_pos, 0);
-        platform.userData = { width: this.width, height: this.height };
-        scene.add(platform);
-        return platform;
+    add(scene, x_pos = 0, y_pos = 0, z_pos = 0) {
+        this.position.set(x_pos, y_pos, z_pos);
+        this.userData = {
+            width: this.width,
+            height: this.height,
+            depth: this.depth,
+        };
+        scene.add(this);
     }
 }
 

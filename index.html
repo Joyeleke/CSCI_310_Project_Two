@@ -1,39 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <link rel="stylesheet" href="/src/style.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project 2</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <div
-      id="counter"
-      style="
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project 2</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="counter" style="
         position: fixed;
         top: 20px;
         left: 20px;
         color: white;
         font-family: monospace;
         font-size: 24px;
-      "
-    ></div>
-    <div
-      id="level"
-      style="
+      "></div>
+  <div id="timer" style="
+        position: fixed;
+        top: 50px;
+        left: 20px;
+        color: white;
+        font-family: monospace;
+        font-size: 24px;
+      "></div>
+  <div id="level" style="
         position: fixed;
         top: 20px;
         right: 20px;
         color: white;
         font-family: monospace;
         font-size: 24px;
-      "
-    ></div>
-    <div
-      id="overlay"
-      style="
+      "></div>
+  <div id="overlay" style="
         position: fixed;
         inset: 0;
         display: flex;
@@ -44,40 +46,63 @@
         font-family: monospace;
         text-align: center;
         padding: 24px;
-      "
-    >
-      <div>
-        <h1 id="overlay-title" style="margin: 0 0 12px 0; font-size: 28px">
-          Blocky's Big Adventure
-        </h1>
-        <p
-          id="overlay-text"
-          style="max-width: 720px; margin: 0 auto 16px; line-height: 1.4"
-        >
-          Blocky, a small adventurous block, is swept away into a mysterious
-          world of floating platforms and deadly spikes. With courage and
-          precision, you must guide Blocky through each perilous level to find
-          the way back home.
-        </p>
-        <p id="overlay-msg" style="opacity: 0.9; margin-bottom: 16px">
-          Press Space or Click Start
-        </p>
-        <div style="margin-bottom: 12px">
-          <label for="difficulty" style="margin-right: 8px">Difficulty:</label>
-          <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium" selected>Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <button
-          id="start-btn"
-          style="padding: 8px 16px; font-family: inherit; cursor: pointer"
-        >
-          Start
-        </button>
+      ">
+    <div>
+      <h1 id="overlay-title" style="margin: 0 0 12px 0; font-size: 28px">
+        Blocky's Big Adventure
+      </h1>
+      <p id="overlay-text" style="max-width: 720px; margin: 0 auto 16px; line-height: 1.4">
+        Blocky, a small adventurous block, is swept away into a mysterious
+        world of floating platforms and deadly spikes. With courage and
+        precision, you must guide Blocky through each perilous level to find
+        the way back home.
+      </p>
+      <p id="overlay-msg" style="opacity: 0.9; margin-bottom: 16px">
+        Press Space or Click Start
+      </p>
+      <div id="difficulty-section" style="margin-bottom: 12px">
+        <label for="difficulty" style="margin-right: 8px">Difficulty:</label>
+        <select id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
       </div>
+      <!-- Personal Best Table (hidden by default) -->
+      <div id="pb-table-section" style="margin-bottom: 16px; display: none;">
+        <h3 style="margin: 0 0 8px 0; font-size: 20px">Personal Best Times</h3>
+        <table id="pb-table" style="margin: 0 auto; border-collapse: collapse; color: white; font-family: monospace;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #666; padding: 8px 16px; background: rgba(255,255,255,0.1);">Difficulty</th>
+              <th style="border: 1px solid #666; padding: 8px 16px; background: rgba(255,255,255,0.1);">Best Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #666; padding: 8px 16px;">Easy</td>
+              <td id="pb-easy" style="border: 1px solid #666; padding: 8px 16px;">-</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #666; padding: 8px 16px;">Medium</td>
+              <td id="pb-medium" style="border: 1px solid #666; padding: 8px 16px;">-</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #666; padding: 8px 16px;">Hard</td>
+              <td id="pb-hard" style="border: 1px solid #666; padding: 8px 16px;">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button id="start-btn" style="padding: 8px 16px; font-family: inherit; cursor: pointer">
+        Start
+      </button>
+      <button id="restart-game-btn" style="padding: 8px 16px; font-family: inherit; cursor: pointer; margin-left: 8px; display: none">
+        Restart Game
+      </button>
     </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>
