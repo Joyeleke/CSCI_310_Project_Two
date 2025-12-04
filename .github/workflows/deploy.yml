@@ -26,19 +26,21 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: client/package-lock.json
 
       - name: Install (npm ci if lockfile exists)
+        working-directory: ./client
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Build
+        working-directory: ./client
         run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: client/dist
 
   deploy:
     needs: build
