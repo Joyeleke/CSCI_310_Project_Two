@@ -14,7 +14,7 @@ import { networkManager } from "./network/NetworkManager.js";
 // Server URL - auto-detect local vs production
 const SERVER_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:3000'
-  : 'https://your-app.onrender.com';  // Update this after Render deployment
+  : 'https://csci-310-project-two.onrender.com';  // Update this after Render deployment
 
 // Scene dimensions
 const targetAspect = 16 / 9;
