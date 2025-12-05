@@ -10,7 +10,6 @@ const io = new Server(httpServer, {
   cors: {
     origin: [
       "http://localhost:5173", // Vite dev server
-      "http://localhost:4173", // Vite preview
       "https://joyeleke.github.io", // GitHub Pages production
     ],
     methods: ["GET", "POST"],

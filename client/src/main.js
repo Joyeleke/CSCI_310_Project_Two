@@ -3,11 +3,18 @@ import Player from "./entities/Player.js";
 import Platform from "./entities/Platform.js";
 import Wall from "./entities/Wall.js";
 import Spike from "./entities/Spike.js";
+import RemotePlayer from "./entities/RemotePlayer.js";
 import { LEVELS, LEVEL_HEIGHT } from "./data/levelData.js";
+import { networkManager } from "./network/NetworkManager.js";
 
 // ========================================
 // CONSTANTS
 // ========================================
+
+// Server URL - auto-detect local vs production
+const SERVER_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000'
+  : 'https://your-app.onrender.com';  // Update this after Render deployment
 
 // Scene dimensions
 const targetAspect = 16 / 9;
@@ -45,6 +52,30 @@ let canMove = true;
 
 const platforms = [];
 const players = [];
+
+// ========================================
+// MULTIPLAYER STATE
+// ========================================
+
+let isMultiplayerMode = false;
+let multiplayerState = 'none'; // none, connecting, waiting, countdown, racing, finished
+let remotePlayer = null;
+let localPlayerNumber = 1;
+let lastPositionSendTime = 0;
+
+// Multiplayer UI elements
+const connectionOverlay = document.getElementById('connection-overlay');
+const connectionStatus = document.getElementById('connection-status');
+const cancelMatchmakingBtn = document.getElementById('cancel-matchmaking');
+const countdownDisplay = document.getElementById('countdown-display');
+const opponentHud = document.getElementById('opponent-hud');
+const opponentHeightSpan = document.getElementById('opponent-height');
+const raceResultOverlay = document.getElementById('race-result-overlay');
+const raceResultTitle = document.getElementById('race-result-title');
+const raceResultMessage = document.getElementById('race-result-message');
+const rematchBtn = document.getElementById('rematch-btn');
+const backToMenuBtn = document.getElementById('back-to-menu-btn');
+const multiplayerBtn = document.getElementById('multiplayer-btn');
 
 // Level tracking
 let currentLevel = 1;
@@ -329,6 +360,276 @@ if (restartGameBtn) {
   restartGameBtn.addEventListener("click", restartGame);
 }
 
+// ========================================
+// MULTIPLAYER FUNCTIONS
+// ========================================
+
+function showConnectionOverlay(message) {
+  if (connectionStatus) connectionStatus.textContent = message;
+  if (connectionOverlay) connectionOverlay.style.display = 'flex';
+}
+
+function hideConnectionOverlay() {
+  if (connectionOverlay) connectionOverlay.style.display = 'none';
+}
+
+function showCountdown(count) {
+  if (countdownDisplay) {
+    countdownDisplay.textContent = count === 0 ? 'GO!' : count.toString();
+    countdownDisplay.style.display = 'flex';
+  }
+}
+
+function hideCountdown() {
+  if (countdownDisplay) countdownDisplay.style.display = 'none';
+}
+
+function showOpponentHud() {
+  if (opponentHud) opponentHud.style.display = 'block';
+}
+
+function hideOpponentHud() {
+  if (opponentHud) opponentHud.style.display = 'none';
+}
+
+function showRaceResult(isWinner, reason) {
+  if (raceResultTitle) {
+    raceResultTitle.textContent = isWinner ? '🎉 You Win!' : '😔 You Lose';
+    raceResultTitle.style.color = isWinner ? '#00ff88' : '#ff6666';
+  }
+  if (raceResultMessage) {
+    if (reason === 'opponent_disconnected') {
+      raceResultMessage.textContent = 'Your opponent disconnected.';
+    } else if (reason === 'reached_top') {
+      raceResultMessage.textContent = isWinner 
+        ? 'You reached the top first!' 
+        : 'Your opponent reached the top first.';
+    } else {
+      raceResultMessage.textContent = '';
+    }
+  }
+  if (raceResultOverlay) raceResultOverlay.style.display = 'flex';
+}
+
+function hideRaceResult() {
+  if (raceResultOverlay) raceResultOverlay.style.display = 'none';
+}
+
+async function startMultiplayer() {
+  isMultiplayerMode = true;
+  multiplayerState = 'connecting';
+  hideOverlay();
+  showConnectionOverlay('Connecting to server...');
+  
+  try {
+    // Connect to server
+    await networkManager.connect(SERVER_URL);
+    
+    // Set up network event handlers
+    setupNetworkHandlers();
+    
+    // Join a game
+    multiplayerState = 'waiting';
+    showConnectionOverlay('Waiting for opponent...');
+    if (cancelMatchmakingBtn) cancelMatchmakingBtn.style.display = 'inline-block';
+    
+    const result = await networkManager.joinGame();
+    
+    // Set up local player position based on server assignment
+    localPlayerNumber = result.playerNumber;
+    player1.position.x = result.startX;
+    player1.position.y = playerStartPositionY;
+    
+    // If there are already other players, create remote player
+    for (const p of result.players) {
+      if (p.id !== result.playerId) {
+        createRemotePlayer(p.x, p.y);
+      }
+    }
+    
+    // If room is already full, countdown will start via event
+    if (result.state === 'countdown') {
+      multiplayerState = 'countdown';
+      hideConnectionOverlay();
+    } else if (result.state === 'waiting' && result.players.length === 1) {
+      // Still waiting for opponent
+      showConnectionOverlay('Waiting for opponent...');
+    }
+    
+  } catch (error) {
+    console.error('Failed to start multiplayer:', error);
+    showConnectionOverlay('Connection failed. Please try again.');
+    setTimeout(() => {
+      cancelMultiplayer();
+    }, 2000);
+  }
+}
+
+function setupNetworkHandlers() {
+  networkManager.onPlayerJoined = (playerData) => {
+    console.log('Opponent joined:', playerData);
+    createRemotePlayer(playerData.x, playerData.y);
+  };
+  
+  networkManager.onPlayerLeft = (data) => {
+    console.log('Opponent left:', data.id);
+    removeRemotePlayer();
+  };
+  
+  networkManager.onPlayerPosition = (data) => {
+    if (remotePlayer) {
+      remotePlayer.setTargetPosition(data.x, data.y, data.velocityY, data.state);
+    }
+  };
+  
+  networkManager.onCountdown = (data) => {
+    multiplayerState = 'countdown';
+    hideConnectionOverlay();
+    showCountdown(data.count);
+    
+    // Ensure player can't move during countdown
+    isPaused = true;
+    canMove = false;
+  };
+  
+  networkManager.onRaceStart = (data) => {
+    multiplayerState = 'racing';
+    hideCountdown();
+    showOpponentHud();
+    
+    // Start the game
+    isPaused = false;
+    canMove = true;
+    hasWon = false;
+    gameStartTime = data.timestamp;
+    totalPausedTime = 0;
+    
+    // Reset physics state
+    velocityY = 0;
+    isOnGround = false;
+    jumpCount = 0;
+    canDoubleJump = false;
+    jumpKeyReleased = true;
+    isGliding = false;
+    isOnWall = false;
+    canWallJump = false;
+    wallSide = null;
+    
+    if (levelDiv) levelDiv.textContent = `Level 1/${LEVELS.length} • Multiplayer`;
+  };
+  
+  networkManager.onGameOver = (data) => {
+    multiplayerState = 'finished';
+    isPaused = true;
+    canMove = false;
+    hideOpponentHud();
+    
+    const isWinner = data.winnerId === networkManager.playerId;
+    showRaceResult(isWinner, data.reason);
+  };
+  
+  networkManager.onDisconnect = (reason) => {
+    console.log('Disconnected from server:', reason);
+    if (multiplayerState !== 'finished' && multiplayerState !== 'none') {
+      showConnectionOverlay('Connection lost. Returning to menu...');
+      setTimeout(() => {
+        cancelMultiplayer();
+      }, 2000);
+    }
+  };
+  
+  networkManager.onError = (error) => {
+    console.error('Network error:', error);
+  };
+}
+
+function createRemotePlayer(x, y) {
+  if (remotePlayer) {
+    remotePlayer.remove(scene);
+  }
+  remotePlayer = new RemotePlayer(playerWidth, playerHeight, playerDepth);
+  remotePlayer.add(scene, x, y);
+}
+
+function removeRemotePlayer() {
+  if (remotePlayer) {
+    remotePlayer.remove(scene);
+    remotePlayer = null;
+  }
+}
+
+function cancelMultiplayer() {
+  networkManager.disconnect();
+  isMultiplayerMode = false;
+  multiplayerState = 'none';
+  removeRemotePlayer();
+  hideConnectionOverlay();
+  hideCountdown();
+  hideOpponentHud();
+  hideRaceResult();
+  
+  // Reset player position
+  player1.position.x = playerStartPositionX;
+  player1.position.y = playerStartPositionY;
+  
+  // Show main menu
+  isPaused = true;
+  showOverlay();
+  if (startBtn) startBtn.textContent = 'Start Solo';
+  if (difficultySection) difficultySection.style.display = 'block';
+}
+
+function returnToMenuFromMultiplayer() {
+  cancelMultiplayer();
+  restartGame();
+}
+
+function rematch() {
+  hideRaceResult();
+  
+  // Reset game state for new match
+  player1.position.x = localPlayerNumber === 1 ? -2 : 2;
+  player1.position.y = playerStartPositionY;
+  velocityY = 0;
+  isOnGround = false;
+  
+  // Request to join a new game
+  multiplayerState = 'waiting';
+  showConnectionOverlay('Finding new opponent...');
+  if (cancelMatchmakingBtn) cancelMatchmakingBtn.style.display = 'inline-block';
+  
+  networkManager.joinGame().then((result) => {
+    localPlayerNumber = result.playerNumber;
+    player1.position.x = result.startX;
+    
+    for (const p of result.players) {
+      if (p.id !== result.playerId) {
+        createRemotePlayer(p.x, p.y);
+      }
+    }
+  }).catch((error) => {
+    console.error('Failed to rematch:', error);
+    cancelMultiplayer();
+  });
+}
+
+// Event listeners for multiplayer UI
+if (multiplayerBtn) {
+  multiplayerBtn.addEventListener('click', startMultiplayer);
+}
+
+if (cancelMatchmakingBtn) {
+  cancelMatchmakingBtn.addEventListener('click', cancelMultiplayer);
+}
+
+if (rematchBtn) {
+  rematchBtn.addEventListener('click', rematch);
+}
+
+if (backToMenuBtn) {
+  backToMenuBtn.addEventListener('click', returnToMenuFromMultiplayer);
+}
+
 
 // ========================================
 // LEVEL MANAGEMENT
@@ -453,6 +754,72 @@ function checkCollision(platform, prevX, prevY) {
 }
 
 // ========================================
+// PLAYER-TO-PLAYER COLLISION
+// ========================================
+
+let lastCollisionTime = 0;
+const collisionCooldown = 500; // Prevent rapid repeated collisions
+
+function checkPlayerCollision() {
+  if (!remotePlayer || !remotePlayer.position) return;
+
+  const currentTime = performance.now();
+  if (currentTime - lastCollisionTime < collisionCooldown) return;
+
+  // Get player bounding boxes
+  const p1Left = player1.position.x - playerWidth / 2;
+  const p1Right = player1.position.x + playerWidth / 2;
+  const p1Bottom = player1.position.y - playerHeight / 2;
+  const p1Top = player1.position.y + playerHeight / 2;
+
+  const p2Left = remotePlayer.position.x - playerWidth / 2;
+  const p2Right = remotePlayer.position.x + playerWidth / 2;
+  const p2Bottom = remotePlayer.position.y - playerHeight / 2;
+  const p2Top = remotePlayer.position.y + playerHeight / 2;
+
+  // Check AABB overlap
+  const isColliding =
+    p1Right > p2Left &&
+    p1Left < p2Right &&
+    p1Bottom < p2Top &&
+    p1Top > p2Bottom;
+
+  if (isColliding) {
+    lastCollisionTime = currentTime;
+
+    // Calculate knockback direction (push away from remote player)
+    const dx = player1.position.x - remotePlayer.position.x;
+    const dy = player1.position.y - remotePlayer.position.y;
+
+    // Normalize and apply knockback
+    const knockbackStrength = 5;
+    const length = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    // Apply horizontal knockback
+    player1.position.x += (dx / length) * knockbackStrength * 0.1;
+
+    // Apply vertical knockback (bounce up slightly if on top, down if below)
+    if (dy > 0) {
+      velocityY = Math.max(velocityY, 8); // Bounce up
+    } else {
+      velocityY = Math.min(velocityY, -5); // Push down
+    }
+
+    // Visual feedback - brief flash
+    if (player1.group) {
+      const originalMaterial = player1.group.children[0]?.material;
+      if (originalMaterial) {
+        const originalColor = originalMaterial.color.getHex();
+        originalMaterial.color.setHex(0xffffff);
+        setTimeout(() => {
+          originalMaterial.color.setHex(originalColor);
+        }, 100);
+      }
+    }
+  }
+}
+
+// ========================================
 // GAME STATE
 // ========================================
 
@@ -535,6 +902,10 @@ function animate() {
 
   // Pause all gameplay updates until the user starts the game
   if (isPaused) {
+    // Still update remote player interpolation when paused (during countdown)
+    if (remotePlayer && multiplayerState === 'countdown') {
+      remotePlayer.update();
+    }
     renderer.render(scene, camera);
     return;
   }
@@ -738,6 +1109,29 @@ function animate() {
     }, 500);
   }
 
+  // ========================================
+  // MULTIPLAYER SYNC & COLLISION
+  // ========================================
+  if (isMultiplayerMode && multiplayerState === 'racing') {
+    // Send position to server (throttled to ~25 times per second)
+    if (!lastPositionSendTime || currentTime - lastPositionSendTime > 40) {
+      networkManager.sendPosition(
+        player1.position.x,
+        player1.position.y,
+        velocityY
+      );
+      lastPositionSendTime = currentTime;
+    }
+
+    // Update remote player interpolation
+    if (remotePlayer) {
+      remotePlayer.update();
+
+      // Check player-to-player collision
+      checkPlayerCollision();
+    }
+  }
+
   // Camera following Player 1
   const targetCameraY = player1.position.y + 4;
 
@@ -774,8 +1168,17 @@ function animate() {
   // Win detection: if player crosses above the final level top
   if (!hasWon && player1.position.y - groundPositionY >= LEVEL_HEIGHT * LEVELS.length) {
     hasWon = true;
-    showWinOverlay();
-    isPaused = true;
+
+    if (isMultiplayerMode) {
+      // In multiplayer, notify server that we reached the top
+      const completionTime = performance.now() - gameStartTime - totalPausedTime;
+      networkManager.sendReachedTop(completionTime);
+      // The actual win/lose overlay will be shown when server responds
+    } else {
+      // Solo mode - show win overlay immediately
+      showWinOverlay();
+      isPaused = true;
+    }
   }
 
   // Update counter
@@ -783,6 +1186,13 @@ function animate() {
     const playerCurrentY = player1.position.y + 6.9;
     const displayY = playerCurrentY > 0 ? playerCurrentY : 0;
     counterDiv.textContent = `${displayY.toFixed(2)} m`;
+  }
+
+  // Update opponent HUD in multiplayer
+  if (isMultiplayerMode && multiplayerState === 'racing' && opponentHeightSpan && remotePlayer) {
+    const opponentY = remotePlayer.position.y + 6.9;
+    const displayOpponentY = opponentY > 0 ? opponentY : 0;
+    opponentHeightSpan.textContent = displayOpponentY.toFixed(2);
   }
 
   // Update timer
