@@ -1,0 +1,249 @@
+import RemotePlayer from '../entities/RemotePlayer.js';
+import { networkManager } from '../network/NetworkManager.js';
+import { gameState, resetPhysicsState } from '../state/gameState.js';
+import { multiplayerState, resetMultiplayerState } from '../state/multiplayerState.js';
+import {
+  SERVER_URL,
+  playerWidth,
+  playerHeight,
+  playerDepth,
+  playerStartPositionX,
+  playerStartPositionY
+} from '../config/constants.js';
+import { LEVELS } from '../data/levelData.js';
+import * as UIManager from './UIManager.js';
+
+// ========================================
+// MULTIPLAYER MANAGER
+// ========================================
+
+let scene = null;
+let player1 = null;
+let levelDiv = null;
+
+export function initMultiplayerManager(sceneRef, playerRef) {
+  scene = sceneRef;
+  player1 = playerRef;
+  levelDiv = UIManager.getUIElements().levelDiv;
+
+  setupUIEventListeners();
+}
+
+function setupUIEventListeners() {
+  const elements = UIManager.getUIElements();
+
+  if (elements.multiplayerBtn) {
+    elements.multiplayerBtn.addEventListener('click', startMultiplayer);
+  }
+
+  if (elements.cancelMatchmakingBtn) {
+    elements.cancelMatchmakingBtn.addEventListener('click', cancelMultiplayer);
+  }
+
+  if (elements.rematchBtn) {
+    elements.rematchBtn.addEventListener('click', rematch);
+  }
+
+  if (elements.backToMenuBtn) {
+    elements.backToMenuBtn.addEventListener('click', returnToMenuFromMultiplayer);
+  }
+}
+
+export async function startMultiplayer() {
+  multiplayerState.isMultiplayerMode = true;
+  multiplayerState.state = 'connecting';
+  UIManager.hideOverlay();
+  UIManager.showConnectionOverlay('Connecting to server...');
+
+  try {
+    // Connect to server
+    await networkManager.connect(SERVER_URL);
+
+    // Set up network event handlers
+    setupNetworkHandlers();
+
+    // Join a game
+    multiplayerState.state = 'waiting';
+    UIManager.showConnectionOverlay('Waiting for opponent...');
+    UIManager.showCancelMatchmaking();
+
+    const result = await networkManager.joinGame();
+
+    // Set up local player position based on server assignment
+    multiplayerState.localPlayerNumber = result.playerNumber;
+    player1.position.x = result.startX;
+    player1.position.y = playerStartPositionY;
+
+    // If there are already other players, create remote player
+    for (const p of result.players) {
+      if (p.id !== result.playerId) {
+        createRemotePlayer(p.x, p.y);
+      }
+    }
+
+    // If room is already full, countdown will start via event
+    if (result.state === 'countdown') {
+      multiplayerState.state = 'countdown';
+      UIManager.hideConnectionOverlay();
+    } else if (result.state === 'waiting' && result.players.length === 1) {
+      // Still waiting for opponent
+      UIManager.showConnectionOverlay('Waiting for opponent...');
+    }
+
+  } catch (error) {
+    console.error('Failed to start multiplayer:', error);
+    UIManager.showConnectionOverlay('Connection failed. Please try again.');
+    setTimeout(() => {
+      cancelMultiplayer();
+    }, 2000);
+  }
+}
+
+function setupNetworkHandlers() {
+  networkManager.onPlayerJoined = (playerData) => {
+    console.log('Opponent joined:', playerData);
+    createRemotePlayer(playerData.x, playerData.y);
+  };
+
+  networkManager.onPlayerLeft = (data) => {
+    console.log('Opponent left:', data.id);
+    removeRemotePlayer();
+  };
+
+  networkManager.onPlayerPosition = (data) => {
+    if (multiplayerState.remotePlayer) {
+      multiplayerState.remotePlayer.setTargetPosition(data.x, data.y, data.velocityY, data.state);
+    }
+  };
+
+  networkManager.onCountdown = (data) => {
+    multiplayerState.state = 'countdown';
+    UIManager.hideConnectionOverlay();
+    UIManager.showCountdown(data.count);
+
+    // Ensure player can't move during countdown
+    gameState.isPaused = true;
+    gameState.canMove = false;
+  };
+
+  networkManager.onRaceStart = (data) => {
+    multiplayerState.state = 'racing';
+    UIManager.hideCountdown();
+    UIManager.showOpponentHud();
+
+    // Start the game
+    gameState.isPaused = false;
+    gameState.canMove = true;
+    gameState.hasWon = false;
+    gameState.gameStartTime = data.timestamp;
+    gameState.totalPausedTime = 0;
+
+    // Reset physics state
+    resetPhysicsState();
+
+    if (levelDiv) levelDiv.textContent = `Level 1/${LEVELS.length} • Multiplayer`;
+  };
+
+  networkManager.onGameOver = (data) => {
+    multiplayerState.state = 'finished';
+    gameState.isPaused = true;
+    gameState.canMove = false;
+    UIManager.hideOpponentHud();
+
+    const isWinner = data.winnerId === networkManager.playerId;
+    UIManager.showRaceResult(isWinner, data.reason);
+  };
+
+  networkManager.onDisconnect = (reason) => {
+    console.log('Disconnected from server:', reason);
+    if (multiplayerState.state !== 'finished' && multiplayerState.state !== 'none') {
+      UIManager.showConnectionOverlay('Connection lost. Returning to menu...');
+      setTimeout(() => {
+        cancelMultiplayer();
+      }, 2000);
+    }
+  };
+
+  networkManager.onError = (error) => {
+    console.error('Network error:', error);
+  };
+}
+
+export function createRemotePlayer(x, y) {
+  if (multiplayerState.remotePlayer) {
+    multiplayerState.remotePlayer.remove(scene);
+  }
+  multiplayerState.remotePlayer = new RemotePlayer(playerWidth, playerHeight, playerDepth);
+  multiplayerState.remotePlayer.add(scene, x, y);
+}
+
+export function removeRemotePlayer() {
+  if (multiplayerState.remotePlayer) {
+    multiplayerState.remotePlayer.remove(scene);
+    multiplayerState.remotePlayer = null;
+  }
+}
+
+export function cancelMultiplayer() {
+  networkManager.disconnect();
+  resetMultiplayerState();
+  removeRemotePlayer();
+  UIManager.hideConnectionOverlay();
+  UIManager.hideCountdown();
+  UIManager.hideOpponentHud();
+  UIManager.hideRaceResult();
+
+  // Reset player position
+  player1.position.x = playerStartPositionX;
+  player1.position.y = playerStartPositionY;
+
+  // Show main menu
+  gameState.isPaused = true;
+  UIManager.showStartOverlay();
+}
+
+export function returnToMenuFromMultiplayer() {
+  cancelMultiplayer();
+}
+
+export function rematch() {
+  UIManager.hideRaceResult();
+
+  // Reset game state for new match
+  player1.position.x = multiplayerState.localPlayerNumber === 1 ? -2 : 2;
+  player1.position.y = playerStartPositionY;
+  gameState.velocityY = 0;
+  gameState.isOnGround = false;
+
+  // Request to join a new game
+  multiplayerState.state = 'waiting';
+  UIManager.showConnectionOverlay('Finding new opponent...');
+  UIManager.showCancelMatchmaking();
+
+  networkManager.joinGame().then((result) => {
+    multiplayerState.localPlayerNumber = result.playerNumber;
+    player1.position.x = result.startX;
+
+    for (const p of result.players) {
+      if (p.id !== result.playerId) {
+        createRemotePlayer(p.x, p.y);
+      }
+    }
+  }).catch((error) => {
+    console.error('Failed to rematch:', error);
+    cancelMultiplayer();
+  });
+}
+
+export function sendPosition(x, y, velocityY) {
+  networkManager.sendPosition(x, y, velocityY);
+}
+
+export function sendReachedTop(completionTime) {
+  networkManager.sendReachedTop(completionTime);
+}
+
+export function getNetworkPlayerId() {
+  return networkManager.playerId;
+}
+
