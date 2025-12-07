@@ -1,3 +1,24 @@
+/**
+ * CollisionManager.js - Collision Detection System
+ *
+ * Handles all collision detection between game entities:
+ * - Player vs Platform/Wall collisions
+ * - Player vs Player collisions (multiplayer)
+ * - Attack hitbox vs Player collisions
+ *
+ * @module managers/CollisionManager
+ *
+ * ## Collision Types:
+ * - Platform: Returns collision side (top, bottom, left, right)
+ * - Spike: Triggers respawn
+ * - Player: Knockback in multiplayer
+ * - Attack: Damage and knockback
+ *
+ * ## Algorithm:
+ * Uses AABB (Axis-Aligned Bounding Box) collision detection.
+ * Determines collision side by checking previous position.
+ */
+
 import {
   playerWidth,
   playerHeight,
@@ -7,12 +28,32 @@ import { gameState } from '../state/gameState.js';
 import { multiplayerState } from '../state/multiplayerState.js';
 
 // ========================================
-// COLLISION MANAGER
+// MODULE STATE
 // ========================================
 
-// Track when the last attack hit occurred to prevent multiple hits from same attack
+/** @type {number} Timestamp of last attack hit (prevents multi-hits) */
 let lastAttackHitTime = 0;
 
+// ========================================
+// PLATFORM COLLISION
+// ========================================
+
+/**
+ * Checks collision between player and a platform/wall.
+ * Uses previous position to determine which side was hit.
+ *
+ * @param {Platform|Wall} platform - The platform to check against
+ * @param {Player} player - The player entity
+ * @param {number} prevX - Player's previous X position
+ * @param {number} prevY - Player's previous Y position
+ * @returns {Object|null} Collision info {side, position} or null if no collision
+ *
+ * @example
+ * const collision = checkCollision(platform, player, prevX, prevY);
+ * if (collision?.side === 'top') {
+ *   // Player landed on platform
+ * }
+ */
 export function checkCollision(platform, player, prevX, prevY) {
   const pBottom = player.position.y - playerHeight / 2;
   const pTop = player.position.y + playerHeight / 2;
@@ -91,6 +132,14 @@ export function checkCollision(platform, player, prevX, prevY) {
 // PLAYER-TO-PLAYER COLLISION
 // ========================================
 
+/**
+ * Checks collision between local player and remote player in multiplayer.
+ * Applies knockback to local player on collision.
+ * Has cooldown to prevent rapid repeated collisions.
+ *
+ * @param {Player} player - The local player entity
+ * @returns {void}
+ */
 export function checkPlayerCollision(player) {
   const remotePlayer = multiplayerState.remotePlayer;
   if (!remotePlayer || !remotePlayer.position) return;
@@ -155,6 +204,13 @@ export function checkPlayerCollision(player) {
 // ATTACK COLLISION DETECTION
 // ========================================
 
+/**
+ * Checks if player's attack hits the remote player.
+ * Applies visual feedback on hit and prevents multi-hits.
+ *
+ * @param {Player} player - The local player entity performing the attack
+ * @returns {boolean} True if the attack hit the remote player, false otherwise
+ */
 export function checkAttackCollision(player) {
   const remotePlayer = multiplayerState.remotePlayer;
   if (!remotePlayer || !remotePlayer.position) return false;

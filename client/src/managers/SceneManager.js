@@ -1,3 +1,29 @@
+/**
+ * SceneManager.js - Three.js Scene Management
+ *
+ * Manages the 3D scene including camera, renderer, lighting, and visual effects.
+ * Handles scene initialization, rendering, and dynamic background effects.
+ *
+ * @module managers/SceneManager
+ *
+ * ## Responsibilities:
+ * - Three.js scene, camera, and renderer setup
+ * - Lighting configuration
+ * - Player entity creation and management
+ * - Ground platform creation
+ * - Gradient background with animated color blobs
+ * - Waterfall particle system
+ * - Star particle system
+ * - Camera following and smooth movement
+ * - Window resize handling
+ *
+ * ## Visual Effects:
+ * - Animated gradient background with color blobs
+ * - Waterfall particles (falling water droplets)
+ * - Star particles (twinkling background stars)
+ * - Spike hit visual feedback (background flash)
+ */
+
 import * as THREE from "three";
 import {
   groundWidth,
@@ -20,22 +46,56 @@ import { LEVELS } from '../data/levelData.js';
 import { getSelectedModelPath } from './ModelPreviewManager.js';
 
 // ========================================
-// SCENE MANAGER
+// MODULE STATE
 // ========================================
 
-let scene, camera, renderer;
+/** @type {THREE.Scene} The main Three.js scene */
+let scene;
+
+/** @type {THREE.PerspectiveCamera} The main camera */
+let camera;
+
+/** @type {THREE.WebGLRenderer} The WebGL renderer */
+let renderer;
+
+/** @type {Player|null} The local player entity */
 let player1 = null;
+
+/** @type {Platform|null} The ground platform */
 let ground = null;
+
+/** @type {THREE.Mesh|null} The background gradient mesh */
 let backgroundMesh = null;
+
+/** @type {Object|null} Shader uniforms for background animation */
 let backgroundUniforms = null;
 
-// Particle systems
+// ========================================
+// PARTICLE SYSTEMS
+// ========================================
+
+/** @type {THREE.Points|null} Waterfall particle system */
 let waterfallParticles = null;
+
+/** @type {THREE.Points|null} Star particle system */
 let starParticles = null;
+
+/** @constant {number} Number of waterfall particles */
 const WATERFALL_PARTICLE_COUNT = 1500;
+
+/** @constant {number} Number of star particles */
 const STAR_PARTICLE_COUNT = 400;
 
-// Generate random color blobs for background
+// ========================================
+// BACKGROUND GENERATION
+// ========================================
+
+/**
+ * Generates random color blob data for the gradient background.
+ * @private
+ * @param {number} count - Number of blobs to generate
+ * @returns {Object} Object containing colors and positions arrays
+ */
 function generateRandomColorBlobs(count) {
   const colors = [];
   const positions = [];
@@ -66,6 +126,12 @@ function generateRandomColorBlobs(count) {
   return { colors, positions };
 }
 
+/**
+ * Creates the animated gradient background mesh with color blobs.
+ * Uses custom shaders for smooth blending and animation.
+ * @private
+ * @returns {THREE.Mesh} The background mesh
+ */
 function createGradientBackground() {
   const blobCount = 8;
   const { colors, positions } = generateRandomColorBlobs(blobCount);
@@ -133,7 +199,12 @@ function createGradientBackground() {
   return backgroundMesh;
 }
 
-// Create waterfall particle system
+/**
+ * Creates the waterfall particle system using BufferGeometry and shaders.
+ * Particles fall continuously from top to bottom with horizontal wobble.
+ * @private
+ * @returns {THREE.Points} The waterfall particle system
+ */
 function createWaterfallParticles() {
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(WATERFALL_PARTICLE_COUNT * 3);
@@ -219,7 +290,12 @@ function createWaterfallParticles() {
   return waterfallParticles;
 }
 
-// Create star particle system
+/**
+ * Creates the star particle system for background twinkling stars.
+ * Uses shader-based animation for twinkling effect.
+ * @private
+ * @returns {THREE.Points} The star particle system
+ */
 function createStarParticles() {
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(STAR_PARTICLE_COUNT * 3);
@@ -281,6 +357,15 @@ function createStarParticles() {
   return starParticles;
 }
 
+// ========================================
+// PUBLIC API
+// ========================================
+
+/**
+ * Initializes the Three.js scene with all required components.
+ * Creates camera, renderer, lighting, background, particles, player, and ground.
+ * @returns {Object} Object containing scene, camera, renderer, player1, and ground
+ */
 export function initScene() {
   // Create scene
   scene = new THREE.Scene();
@@ -345,26 +430,52 @@ export function initScene() {
   return { scene, camera, renderer, player1, ground };
 }
 
+/**
+ * Gets the Three.js scene.
+ * @returns {THREE.Scene} The game scene
+ */
 export function getScene() {
   return scene;
 }
 
+/**
+ * Gets the camera.
+ * @returns {THREE.PerspectiveCamera} The main camera
+ */
 export function getCamera() {
   return camera;
 }
 
+/**
+ * Gets the renderer.
+ * @returns {THREE.WebGLRenderer} The WebGL renderer
+ */
 export function getRenderer() {
   return renderer;
 }
 
+/**
+ * Gets the local player entity.
+ * @returns {Player} The player entity
+ */
 export function getPlayer() {
   return player1;
 }
 
+/**
+ * Gets the ground platform.
+ * @returns {Platform} The ground platform
+ */
 export function getGround() {
   return ground;
 }
 
+/**
+ * Updates camera position to smoothly follow the target.
+ * Also updates background parallax position.
+ * @param {number} targetX - Target X position (usually player X)
+ * @param {number} targetY - Target Y position (usually player Y)
+ */
 export function updateCamera(targetX, targetY) {
   const targetCameraY = targetY + 4;
   camera.position.y += (targetCameraY - camera.position.y) * 0.08;
@@ -386,6 +497,10 @@ export function updateCamera(targetX, targetY) {
   }
 }
 
+/**
+ * Sets the scene background color.
+ * @param {number} hexColor - Color as hex value (e.g., 0xff0000)
+ */
 export function setBackgroundColor(hexColor) {
   scene.background.setHex(hexColor);
   // Also update the shader base color
@@ -394,6 +509,11 @@ export function setBackgroundColor(hexColor) {
   }
 }
 
+/**
+ * Updates the background color based on the current level.
+ * Uses level's backgroundColor if defined, otherwise default.
+ * @param {number} levelNumber - The current level number
+ */
 export function updateBackgroundForLevel(levelNumber) {
   const level = LEVELS[levelNumber - 1];
   if (level && level.backgroundColor) {
@@ -409,6 +529,10 @@ export function updateBackgroundForLevel(levelNumber) {
   }
 }
 
+/**
+ * Shows visual feedback when player hits spikes.
+ * Flashes the background red momentarily.
+ */
 export function showSpikeHitFeedback() {
   gameState.isShowingSpikeHit = true;
   gameState.spikeHitTime = performance.now();
@@ -418,6 +542,10 @@ export function showSpikeHitFeedback() {
   }
 }
 
+/**
+ * Resets the spike hit visual feedback after duration.
+ * @param {number} currentTime - Current timestamp from performance.now()
+ */
 export function resetSpikeHitFeedback(currentTime) {
   if (gameState.isShowingSpikeHit && currentTime - gameState.spikeHitTime > 500) {
     gameState.isShowingSpikeHit = false;
@@ -425,6 +553,10 @@ export function resetSpikeHitFeedback(currentTime) {
   }
 }
 
+/**
+ * Renders the scene. Called every frame.
+ * Updates all animated shader uniforms before rendering.
+ */
 export function render() {
   const time = performance.now() * 0.001;
 
@@ -447,6 +579,10 @@ export function render() {
   renderer.render(scene, camera);
 }
 
+/**
+ * Changes the player's 3D model to a new one.
+ * @param {string} modelPath - Path to the new model file
+ */
 export function changePlayerModel(modelPath) {
   if (player1) {
     player1.changeModel(modelPath);

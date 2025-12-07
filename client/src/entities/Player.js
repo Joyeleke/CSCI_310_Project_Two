@@ -1,13 +1,46 @@
+/**
+ * Player.js - Local Player Entity
+ *
+ * Represents the player-controlled character in the game.
+ * Loads a 3D model and manages collision hitbox, attack particles,
+ * and model transformations.
+ *
+ * @module entities/Player
+ *
+ * ## Structure:
+ * - Group (container for all player elements)
+ *   - Hitbox (invisible collision mesh)
+ *   - Model (visible 3D character model)
+ *   - Attack Indicator (particle group for attacks)
+ *
+ * ## Features:
+ * - Dynamic 3D model loading via GLTFLoader
+ * - Attack particle system with animation
+ * - Model rotation for attack direction
+ * - Support for multiple character models
+ */
+
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Base path for assets (matches vite.config.js base)
+/** Base path for assets (matches vite.config.js base) */
 const BASE_PATH = import.meta.env.BASE_URL || '/';
 
-// Shared loader instance
+/** Shared GLTFLoader instance for efficiency */
 const gltfLoader = new GLTFLoader();
 
+/**
+ * Player class - The local player entity
+ * @class
+ */
 export default class Player {
+  /**
+   * Creates a new Player instance.
+   * @param {number} width - Collision box width
+   * @param {number} height - Collision box height
+   * @param {number} depth - Collision box depth
+   * @param {string} [modelPath] - Path to the 3D model file
+   */
   constructor(width, height, depth, modelPath = `${BASE_PATH}models/player.glb`) {
     this.width = width;
     this.height = height;
@@ -16,20 +49,34 @@ export default class Player {
 
     // Invisible bounding box for collisions
     const geometry = new THREE.BoxGeometry(width, height, depth);
-    const material = new THREE.MeshBasicMaterial({ visible: false }); // invisible hitbox
+    const material = new THREE.MeshBasicMaterial({ visible: false });
     this.hitbox = new THREE.Mesh(geometry, material);
 
-    this.group = new THREE.Group(); // Parent that holds both model and hitbox
+    /** @type {THREE.Group} Parent container for all player elements */
+    this.group = new THREE.Group();
     this.group.add(this.hitbox);
 
+    /** @type {THREE.Object3D|null} The loaded 3D model */
     this.model = null;
+
+    /** @type {THREE.Group|null} Container for attack particles */
     this.attackIndicator = null;
+
+    /** @type {THREE.Mesh[]} Array of attack particle meshes */
     this.attackParticles = [];
-    this.baseRotationY = 0; // Store base rotation for model-specific adjustments
+
+    /** @type {number} Base Y rotation for model-specific adjustments */
+    this.baseRotationY = 0;
+
     this.createAttackIndicator();
     this.loadModel();
   }
 
+  /**
+   * Creates the attack particle system.
+   * Particles are pre-created and reused for performance.
+   * @private
+   */
   createAttackIndicator() {
     // Create a container for attack particles
     this.attackIndicator = new THREE.Group();
@@ -61,6 +108,11 @@ export default class Player {
     }
   }
 
+  /**
+   * Shows attack particles in the specified direction.
+   * Animates particles and rotates model to face attack direction.
+   * @param {Object} direction - Attack direction {x, y}
+   */
   showAttack(direction) {
     if (this.attackIndicator && direction) {
       this.attackIndicator.visible = true;
@@ -107,6 +159,9 @@ export default class Player {
     }
   }
 
+  /**
+   * Hides the attack particle indicator and resets model rotation.
+   */
   hideAttack() {
     if (this.attackIndicator) {
       this.attackIndicator.visible = false;
@@ -117,7 +172,11 @@ export default class Player {
     }
   }
 
-  // Get the attack hitbox bounds in world coordinates
+  /**
+   * Gets the attack hitbox bounds in world coordinates.
+   * @param {Object} direction - Attack direction {x, y}
+   * @returns {Object|null} Bounds {left, right, bottom, top} or null
+   */
   getAttackBounds(direction) {
     if (!direction) return null;
 
@@ -145,6 +204,11 @@ export default class Player {
     }
   }
 
+  /**
+   * Loads the 3D model from the specified path.
+   * Scales and positions the model to fit the hitbox.
+   * @private
+   */
   loadModel() {
     gltfLoader.load(
       this.modelPath,
@@ -182,12 +246,22 @@ export default class Player {
     );
   }
 
+  /**
+   * Adds the player to the scene at the specified position.
+   * @param {THREE.Scene} scene - The scene to add to
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   */
   add(scene, x, y) {
     this.group.position.set(x, y, 0);
     scene.add(this.group);
     this.position = this.group.position;
   }
 
+  /**
+   * Changes the player's 3D model to a new one.
+   * @param {string} newModelPath - Path to the new model file
+   */
   changeModel(newModelPath) {
     // Remove existing model from group
     if (this.model) {

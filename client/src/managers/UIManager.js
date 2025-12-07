@@ -1,11 +1,37 @@
+/**
+ * UIManager.js - User Interface Management
+ *
+ * Manages all DOM-based UI elements including overlays, HUD, and menus.
+ * Caches DOM element references for performance.
+ *
+ * @module managers/UIManager
+ *
+ * ## UI Sections:
+ * - Main overlay (start/pause/win screens)
+ * - HUD (timer, height counter, level display)
+ * - Personal best table
+ * - Multiplayer UI (connection status, opponent HUD, results)
+ *
+ * ## Overlay States:
+ * - Start: Initial game start screen
+ * - Pause: In-game pause menu
+ * - Win: Victory screen with time and PB
+ * - Multiplayer: Connection and race result overlays
+ */
+
 import { gameState, personalBests, formatTime, checkAndSavePersonalBest } from '../state/gameState.js';
 
 // ========================================
-// UI MANAGER
+// UI ELEMENT CACHE
 // ========================================
 
-// UI elements cache
+/**
+ * Cached references to all UI DOM elements.
+ * Elements are queried once at load time for performance.
+ * @type {Object}
+ */
 const elements = {
+  // Main overlay elements
   overlay: document.getElementById("overlay"),
   startBtn: document.getElementById("start-btn"),
   restartGameBtn: document.getElementById("restart-game-btn"),
@@ -14,10 +40,15 @@ const elements = {
   overlayTitle: document.getElementById("overlay-title"),
   overlayText: document.getElementById("overlay-text"),
   overlayMsg: document.getElementById("overlay-msg"),
+
+  // HUD elements
   counterDiv: document.getElementById("counter"),
   timerDiv: document.getElementById("timer"),
   levelDiv: document.getElementById("level"),
+
+  // Personal best table
   pbTableSection: document.getElementById("pb-table-section"),
+
   // Multiplayer UI elements
   connectionOverlay: document.getElementById('connection-overlay'),
   connectionStatus: document.getElementById('connection-status'),
@@ -33,6 +64,10 @@ const elements = {
   multiplayerBtn: document.getElementById('multiplayer-btn'),
 };
 
+/**
+ * Gets the cached UI elements object.
+ * @returns {Object} Object containing all cached DOM element references
+ */
 export function getUIElements() {
   return elements;
 }
@@ -41,10 +76,16 @@ export function getUIElements() {
 // OVERLAY MANAGEMENT
 // ========================================
 
+/**
+ * Hides the main game overlay.
+ */
 export function hideOverlay() {
   if (elements.overlay) elements.overlay.style.display = "none";
 }
 
+/**
+ * Shows the main game overlay.
+ */
 export function showOverlay() {
   if (elements.overlay) elements.overlay.style.display = "flex";
 }
@@ -53,6 +94,9 @@ export function showOverlay() {
 // PERSONAL BEST DISPLAY
 // ========================================
 
+/**
+ * Updates the personal best display table with current values.
+ */
 export function updatePBDisplay() {
   const pbEasy = document.getElementById('pb-easy');
   const pbMedium = document.getElementById('pb-medium');
@@ -67,12 +111,22 @@ export function updatePBDisplay() {
 // HUD UPDATES
 // ========================================
 
+/**
+ * Updates the level display in the HUD.
+ * @param {number} currentLevel - Current level number
+ * @param {number} totalLevels - Total number of levels
+ * @param {string} difficultyLabel - Selected difficulty label
+ */
 export function updateLevelDisplay(currentLevel, totalLevels, difficultyLabel) {
   if (elements.levelDiv) {
     elements.levelDiv.textContent = `Level ${currentLevel}/${totalLevels} • ${difficultyLabel}`;
   }
 }
 
+/**
+ * Updates the height counter display.
+ * @param {number} playerY - Player's Y position
+ */
 export function updateCounter(playerY) {
   if (elements.counterDiv) {
     const displayY = playerY > 0 ? playerY : 0;
@@ -80,6 +134,12 @@ export function updateCounter(playerY) {
   }
 }
 
+/**
+ * Updates the game timer display.
+ * @param {number} currentTime - Current timestamp
+ * @param {number} gameStartTime - Timestamp when game started
+ * @param {number} totalPausedTime - Total time spent paused
+ */
 export function updateTimer(currentTime, gameStartTime, totalPausedTime) {
   if (elements.timerDiv && gameStartTime > 0) {
     const currentGameTime = currentTime - gameStartTime - totalPausedTime;
@@ -92,6 +152,10 @@ export function updateTimer(currentTime, gameStartTime, totalPausedTime) {
   }
 }
 
+/**
+ * Updates the opponent height display in multiplayer.
+ * @param {number} opponentY - Opponent's Y position
+ */
 export function updateOpponentHeight(opponentY) {
   if (elements.opponentHeightSpan) {
     const displayOpponentY = opponentY > 0 ? opponentY : 0;
@@ -103,6 +167,10 @@ export function updateOpponentHeight(opponentY) {
 // GAME OVERLAYS
 // ========================================
 
+/**
+ * Shows the pause menu overlay.
+ * Records pause time for accurate timer calculation.
+ */
 export function showPauseMenu() {
   gameState.pausedTime = performance.now();
   gameState.isPauseMenuOpen = true;
@@ -121,6 +189,10 @@ export function showPauseMenu() {
   showOverlay();
 }
 
+/**
+ * Shows the win overlay with completion time and potential new record.
+ * Saves personal best if applicable.
+ */
 export function showWinOverlay() {
   if (gameState.gameStartTime > 0) {
     const completionTime = performance.now() - gameState.gameStartTime - gameState.totalPausedTime;
@@ -148,6 +220,9 @@ export function showWinOverlay() {
   showOverlay();
 }
 
+/**
+ * Shows the initial start overlay with game introduction.
+ */
 export function showStartOverlay() {
   if (elements.overlayTitle) elements.overlayTitle.textContent = "Blocky's Big Adventure";
   if (elements.overlayText) elements.overlayText.textContent = "Blocky, a small adventurous block, is swept away into a mysterious world of floating platforms and deadly spikes. With courage and precision, you must guide Blocky through each perilous level to find the way back home.";
@@ -165,15 +240,26 @@ export function showStartOverlay() {
 // MULTIPLAYER UI
 // ========================================
 
+/**
+ * Shows the connection/matchmaking overlay with a status message.
+ * @param {string} message - Status message to display
+ */
 export function showConnectionOverlay(message) {
   if (elements.connectionStatus) elements.connectionStatus.textContent = message;
   if (elements.connectionOverlay) elements.connectionOverlay.style.display = 'flex';
 }
 
+/**
+ * Hides the connection overlay.
+ */
 export function hideConnectionOverlay() {
   if (elements.connectionOverlay) elements.connectionOverlay.style.display = 'none';
 }
 
+/**
+ * Shows the countdown display during race start.
+ * @param {number} count - Countdown number (3, 2, 1, 0 for GO!)
+ */
 export function showCountdown(count) {
   if (elements.countdownDisplay) {
     elements.countdownDisplay.textContent = count === 0 ? 'GO!' : count.toString();
@@ -181,18 +267,32 @@ export function showCountdown(count) {
   }
 }
 
+/**
+ * Hides the countdown display.
+ */
 export function hideCountdown() {
   if (elements.countdownDisplay) elements.countdownDisplay.style.display = 'none';
 }
 
+/**
+ * Shows the opponent HUD panel.
+ */
 export function showOpponentHud() {
   if (elements.opponentHud) elements.opponentHud.style.display = 'block';
 }
 
+/**
+ * Hides the opponent HUD panel.
+ */
 export function hideOpponentHud() {
   if (elements.opponentHud) elements.opponentHud.style.display = 'none';
 }
 
+/**
+ * Shows the race result overlay (win/lose).
+ * @param {boolean} isWinner - Whether the local player won
+ * @param {string} reason - Reason for game end ('reached_top', 'opponent_disconnected')
+ */
 export function showRaceResult(isWinner, reason) {
   if (elements.raceResultTitle) {
     elements.raceResultTitle.textContent = isWinner ? '🎉 You Win!' : '😔 You Lose';
@@ -212,10 +312,16 @@ export function showRaceResult(isWinner, reason) {
   if (elements.raceResultOverlay) elements.raceResultOverlay.style.display = 'flex';
 }
 
+/**
+ * Hides the race result overlay.
+ */
 export function hideRaceResult() {
   if (elements.raceResultOverlay) elements.raceResultOverlay.style.display = 'none';
 }
 
+/**
+ * Shows the cancel matchmaking button.
+ */
 export function showCancelMatchmaking() {
   if (elements.cancelMatchmakingBtn) elements.cancelMatchmakingBtn.style.display = 'inline-block';
 }

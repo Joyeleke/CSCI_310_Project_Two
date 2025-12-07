@@ -1,6 +1,29 @@
-// ========================================
-// MAIN ENTRY POINT
-// ========================================
+/**
+ * main.js - Application Entry Point
+ *
+ * This is the main entry point for "Blocky's Big Adventure" game.
+ * It initializes all game systems, sets up event listeners, and starts the game loop.
+ *
+ * @module main
+ *
+ * ## Responsibilities:
+ * - Initialize Three.js scene via SceneManager
+ * - Set up multiplayer networking
+ * - Configure music and volume controls
+ * - Handle game state transitions (start, pause, resume, restart)
+ * - Set up UI event listeners
+ * - Start the main game loop
+ *
+ * ## Game Flow:
+ * 1. Scene initialization (3D environment, player, ground)
+ * 2. Load saved preferences (personal bests, selected model, volume)
+ * 3. Display start overlay and wait for user input
+ * 4. On start: begin gameplay with selected difficulty
+ * 5. Game loop handles physics, rendering, and input
+ *
+ * @author CSCI 310 Project 2 Team
+ * @version 1.0.0
+ */
 
 import {
   playerStartPositionX,
@@ -67,6 +90,12 @@ if (volumeSlider && volumeValue) {
 
 // Start music on first user interaction (to avoid autoplay restrictions)
 let musicStarted = false;
+
+/**
+ * Starts background music on first user interaction.
+ * Required due to browser autoplay policies.
+ * @private
+ */
 function startMusicOnInteraction() {
   if (!musicStarted) {
     musicManager.start();
@@ -82,6 +111,13 @@ document.addEventListener('keydown', startMusicOnInteraction, { once: true });
 // GAME CONTROL FUNCTIONS
 // ========================================
 
+/**
+ * Starts a new game session.
+ * - Reads difficulty selection and adjusts jump strength
+ * - Applies selected character model
+ * - Initializes timer and resets player position
+ * - Hides overlay and enables player movement
+ */
 function startGame() {
   const select = document.getElementById("difficulty");
   if (select) {
@@ -112,6 +148,11 @@ function startGame() {
   UIManager.updateLevelDisplay(1, LEVELS.length, gameState.selectedDifficultyLabel);
 }
 
+/**
+ * Resumes game from pause state.
+ * Calculates paused duration and adds it to total paused time
+ * to maintain accurate timer.
+ */
 function resumeGame() {
   // Add the paused duration to total paused time
   if (gameState.pausedTime > 0) {
@@ -125,6 +166,13 @@ function resumeGame() {
   UIManager.hideOverlay();
 }
 
+/**
+ * Restarts the game from the beginning.
+ * - Resets all game state to initial values
+ * - Clears all loaded levels
+ * - Resets player to starting position
+ * - Shows the start overlay
+ */
 function restartGame() {
   // Reset all game state
   gameState.currentLevel = 1;

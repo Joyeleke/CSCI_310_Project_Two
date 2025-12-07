@@ -1,17 +1,47 @@
 /**
- * RemotePlayer - Represents another player in the game (controlled via network)
+ * RemotePlayer.js - Networked Player Entity
+ *
+ * Represents another player in multiplayer mode, controlled via network updates.
+ * Uses interpolation for smooth movement between position updates.
+ *
+ * @module entities/RemotePlayer
+ *
+ * ## Features:
+ * - Smooth position interpolation (lerp)
+ * - 3D model with color tint
+ * - State tracking (jumping, gliding, etc.)
+ * - Collision bounds for attack detection
+ *
+ * ## Network Updates:
+ * Position updates are received ~25 times per second.
+ * The update() method interpolates between updates for smooth visuals.
+ *
+ * ## Visual Distinction:
+ * Remote players have a different color tint to distinguish
+ * them from the local player.
  */
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Base path for assets (matches vite.config.js base)
+/** Base path for assets (matches vite.config.js base) */
 const BASE_PATH = import.meta.env.BASE_URL || '/';
 
-// Shared loader instance
+/** Shared GLTFLoader instance for efficiency */
 const gltfLoader = new GLTFLoader();
 
+/**
+ * RemotePlayer class - Represents a networked opponent
+ * @class
+ */
 export default class RemotePlayer {
+  /**
+   * Creates a new RemotePlayer instance.
+   * @param {number} width - Collision box width
+   * @param {number} height - Collision box height
+   * @param {number} depth - Collision box depth
+   * @param {number} [color=0xff6600] - Color tint for the player model
+   */
   constructor(width, height, depth, color = 0xff6600) {
     this.width = width;
     this.height = height;
@@ -26,6 +56,7 @@ export default class RemotePlayer {
     });
     this.hitbox = new THREE.Mesh(geometry, material);
 
+    /** @type {THREE.Group} Container for hitbox and model */
     this.group = new THREE.Group();
     this.group.add(this.hitbox);
 

@@ -1,36 +1,91 @@
+/**
+ * levelData.js - Procedural Level Generation
+ *
+ * Generates all game levels using a seeded random number generator.
+ * Ensures reproducible level layouts while providing variety.
+ *
+ * @module data/levelData
+ *
+ * ## Generation Algorithm:
+ * 1. Uses seeded PRNG (mulberry32) for reproducibility
+ * 2. Distributes platforms vertically throughout level
+ * 3. Ensures minimum gaps between platforms (reachable jumps)
+ * 4. Avoids overlapping platforms
+ * 5. Places spike hazards on some platforms
+ * 6. Generates walls for wall-jumping sections
+ *
+ * ## Level Structure:
+ * Each level contains:
+ * - platforms: Array of [x, y, width, height, isSpike]
+ * - walls: Array of [x, y, width, height]
+ * - color: Platform color for visual variety
+ * - backgroundColor: Scene background color (optional)
+ * - startY: Y offset for level positioning
+ *
+ * ## Constraints:
+ * - Platforms must be reachable (max jump distance)
+ * - No overlapping platforms
+ * - Minimum gaps between consecutive platforms
+ * - Spikes placed on inner platforms (not edges)
+ *
+ * @exports {Array} LEVELS - Array of generated level data
+ * @exports {number} LEVEL_HEIGHT - Height of each level in world units
+ */
+
+/** @constant {number} Height of each level in world units */
 const LEVEL_HEIGHT = 15;
+
+/** @constant {number} Total number of levels to generate */
 const NUM_LEVELS = 20;
+
+/** @constant {number} Number of platforms per level */
 const PLATFORMS_PER_LEVEL = 12;
-const SPIKES_PER_LEVEL = 6; // Number of spike platforms per level
 
-// --- Seed for Random Number Generator ---
-const SEED = 12345; // Change this value to get different levels
+/** @constant {number} Number of spike platforms per level */
+const SPIKES_PER_LEVEL = 6;
 
-// --- Platform Generation Constraints ---
+// ========================================
+// RANDOM NUMBER GENERATION
+// ========================================
+
+/** @constant {number} Seed for reproducible level generation */
+const SEED = 12345;
+
+// ========================================
+// PLATFORM CONSTRAINTS
+// ========================================
+
 const MIN_PLATFORM_WIDTH = 1.5;
 const MAX_PLATFORM_WIDTH = 5.5;
 const MIN_X = -20.0;
 const MAX_X = 20.0;
-const MIN_FIRST_Y = 1.0; // Y position for the first platform
+const MIN_FIRST_Y = 1.0;
 const MAX_FIRST_Y = 1.5;
-const MAX_FINAL_Y = 14.8; // Max Y for the last platform (to be < 15)
+const MAX_FINAL_Y = 14.8;
 const PLATFORM_HEIGHT = 0.3;
 
-// --- Wall Generation Constraints ---
+// ========================================
+// WALL CONSTRAINTS
+// ========================================
+
 const MIN_WALL_HEIGHT = 2.0;
 const MAX_WALL_HEIGHT = 6.0;
 const WALL_WIDTH = 0.3;
-const WALLS_PER_LEVEL = 5; // Number of walls per level
-const MIN_WALL_X_GAP = 6.0; // Minimum horizontal distance between walls
+const WALLS_PER_LEVEL = 5;
+const MIN_WALL_X_GAP = 6.0;
 
-// --- New Constraints ---
-const MIN_CONSECUTIVE_X_GAP = 7.5; // Min horizontal distance between centers of consecutive platforms
-const MAX_GENERATION_ATTEMPTS = 30; // Safety break for RNG
+// ========================================
+// GENERATION CONSTRAINTS
+// ========================================
+
+const MIN_CONSECUTIVE_X_GAP = 7.5;
+const MAX_GENERATION_ATTEMPTS = 30;
 
 /**
- * A simple seedable pseudo-random number generator (mulberry32).
- * @param {number} a - The seed.
- * @returns {function} A function that returns a random float between 0 and 1.
+ * Mulberry32 seeded pseudo-random number generator.
+ * Produces reproducible random sequences from a seed.
+ * @param {number} a - The seed value
+ * @returns {Function} Function that returns random float 0-1
  */
 function mulberry32(a) {
     return function () {
@@ -41,18 +96,16 @@ function mulberry32(a) {
     }
 }
 
-// Create our single, seeded random function
+/** Seeded random function instance */
 const random = mulberry32(SEED);
 
 /**
- * Generates a random float between min (inclusive) and max (exclusive)
- * using our seeded PRNG.
- * @param {number} min
- * @param {number} max
- * @returns {number}
+ * Generates a random float between min and max using seeded PRNG.
+ * @param {number} min - Minimum value (inclusive)
+ * @param {number} max - Maximum value (exclusive)
+ * @returns {number} Random float in range
  */
 function getRandom(min, max) {
-    // Uses the 'random' function created from our seed
     return random() * (max - min) + min;
 }
 

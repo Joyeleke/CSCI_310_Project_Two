@@ -1,23 +1,64 @@
+/**
+ * MusicManager.js - Background Music System
+ *
+ * Manages background music playback with shuffle queue support.
+ * Handles browser autoplay restrictions and persists volume settings.
+ *
+ * @module managers/MusicManager
+ *
+ * ## Features:
+ * - Shuffle queue: All tracks play once before reshuffling
+ * - Volume control with localStorage persistence
+ * - Autoplay handling (starts on user interaction)
+ * - Auto-advance to next track
+ * - Error recovery (skip broken tracks)
+ *
+ * ## Usage:
+ * The musicManager singleton is exported and initialized on import.
+ * Call musicManager.start() on first user interaction.
+ */
+
 // ========================================
 // MUSIC MANAGER
 // ========================================
 
-// Base path for assets (matches vite.config.js base)
+/** Base path for assets (matches vite.config.js base) */
 const BASE_PATH = import.meta.env.BASE_URL || '/';
 
+/**
+ * MusicManager class - Handles background music playback
+ * @class
+ */
 class MusicManager {
+  /**
+   * Creates a new MusicManager instance.
+   * Use the exported singleton instead of creating new instances.
+   */
   constructor() {
+    /** @type {HTMLAudioElement|null} The audio element for playback */
     this.audio = null;
+
+    /** @type {string[]} Original list of track filenames */
     this.tracks = [];
+
+    /** @type {string[]} Shuffled queue of tracks to play */
     this.shuffledQueue = [];
+
+    /** @type {number} Index of current track in shuffled queue */
     this.currentTrackIndex = 0;
+
+    /** @type {number} Volume level (0.0 to 1.0) */
     this.volume = 0.5;
+
+    /** @type {boolean} Whether music is currently playing */
     this.isPlaying = false;
+
+    /** @type {boolean} Whether the manager has been initialized */
     this.isInitialized = false;
   }
 
   /**
-   * Initialize the music manager with available tracks
+   * Initializes the music manager with available tracks.
    * @param {string[]} trackFiles - Array of track filenames
    */
   init(trackFiles) {

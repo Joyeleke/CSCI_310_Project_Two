@@ -1,19 +1,42 @@
+/**
+ * ParticleEffectsManager.js - Player Particle Effects System
+ *
+ * Handles visual particle effects triggered by player actions:
+ * - Glide trail particles (cyan-blue, follow player while gliding)
+ * - Double jump burst particles (orange-yellow, burst on double jump)
+ *
+ * @module managers/ParticleEffectsManager
+ *
+ * ## Optimization:
+ * - Object pooling: Particles are recycled instead of created/destroyed
+ * - Shared geometry: All particles share geometry instances
+ * - Pre-created materials: Color variations created once at startup
+ *
+ * ## Performance:
+ * - Max 50 glide particles
+ * - Max 30 jump particles per burst
+ * - Particles returned to pool when expired
+ */
+
 import * as THREE from "three";
 
 // ========================================
-// PARTICLE EFFECTS MANAGER
-// Optimized with object pooling and shared geometry
+// SHARED RESOURCES (created once)
 // ========================================
 
-// Shared geometries (created once, reused for all particles)
+/** Shared geometry for glide trail particles */
 const GLIDE_GEOMETRY = new THREE.SphereGeometry(0.1, 6, 6);
+
+/** Shared geometry for double jump burst particles */
 const JUMP_GEOMETRY = new THREE.SphereGeometry(0.12, 6, 6);
 
-// Pre-created materials for color variations
+/** Pre-created materials for glide particles (cyan-blue variations) */
 const GLIDE_MATERIALS = [];
+
+/** Pre-created materials for jump particles (orange-yellow variations) */
 const JUMP_MATERIALS = [];
 
-// Initialize shared materials
+// Initialize shared materials with color variations
 for (let i = 0; i < 5; i++) {
   GLIDE_MATERIALS.push(new THREE.MeshBasicMaterial({
     color: new THREE.Color().setHSL(0.55 + i * 0.02, 0.8, 0.6),
@@ -27,22 +50,55 @@ for (let i = 0; i < 5; i++) {
   }));
 }
 
+// ========================================
+// PARTICLE EFFECTS MANAGER CLASS
+// ========================================
+
+/**
+ * ParticleEffectsManager - Manages player-triggered particle effects
+ * @class
+ */
 class ParticleEffectsManager {
+  /**
+   * Creates a new ParticleEffectsManager.
+   * Use the exported singleton instead of creating new instances.
+   */
   constructor() {
+    /** @type {THREE.Scene|null} Reference to the game scene */
     this.scene = null;
+
+    /** @type {THREE.Mesh[]} Active glide particles */
     this.glideParticles = [];
+
+    /** @type {THREE.Mesh[]} Active jump particles */
     this.jumpParticles = [];
-    this.glidePool = []; // Object pool for glide particles
-    this.jumpPool = []; // Object pool for jump particles
+
+    /** @type {THREE.Mesh[]} Object pool for recycled glide particles */
+    this.glidePool = [];
+
+    /** @type {THREE.Mesh[]} Object pool for recycled jump particles */
+    this.jumpPool = [];
+
+    /** @type {number} Maximum active glide particles */
     this.maxGlideParticles = 50;
+
+    /** @type {number} Maximum active jump particles */
     this.maxJumpParticles = 30;
   }
 
+  /**
+   * Initializes the manager with a scene reference.
+   * @param {THREE.Scene} scene - The game scene
+   */
   init(scene) {
     this.scene = scene;
   }
 
-  // Get a particle from pool or create new one
+  /**
+   * Gets a glide particle from pool or creates a new one.
+   * @private
+   * @returns {THREE.Mesh} A glide particle mesh
+   */
   getGlideParticle() {
     if (this.glidePool.length > 0) {
       return this.glidePool.pop();
@@ -51,6 +107,11 @@ class ParticleEffectsManager {
     return new THREE.Mesh(GLIDE_GEOMETRY, material);
   }
 
+  /**
+   * Gets a jump particle from pool or creates a new one.
+   * @private
+   * @returns {THREE.Mesh} A jump particle mesh
+   */
   getJumpParticle() {
     if (this.jumpPool.length > 0) {
       return this.jumpPool.pop();
@@ -59,7 +120,11 @@ class ParticleEffectsManager {
     return new THREE.Mesh(JUMP_GEOMETRY, material);
   }
 
-  // Return particle to pool
+  /**
+   * Returns a glide particle to the pool for reuse.
+   * @private
+   * @param {THREE.Mesh} particle - The particle to return
+   */
   returnGlideParticle(particle) {
     this.scene.remove(particle);
     particle.scale.set(1, 1, 1);
@@ -67,6 +132,11 @@ class ParticleEffectsManager {
     this.glidePool.push(particle);
   }
 
+  /**
+   * Returns a jump particle to the pool for reuse.
+   * @private
+   * @param {THREE.Mesh} particle - The particle to return
+   */
   returnJumpParticle(particle) {
     this.scene.remove(particle);
     particle.scale.set(1, 1, 1);
@@ -74,6 +144,13 @@ class ParticleEffectsManager {
     this.jumpPool.push(particle);
   }
 
+  /**
+   * Spawns glide trail particles at the player's position.
+   * Called each frame while the player is gliding.
+   * @param {number} x - Player X position
+   * @param {number} y - Player Y position
+   * @param {number} direction - Glide direction (-1 left, 1 right)
+   */
   spawnGlideParticles(x, y, direction) {
     if (!this.scene) return;
 
@@ -102,6 +179,12 @@ class ParticleEffectsManager {
     }
   }
 
+  /**
+   * Spawns a burst of particles when the player double jumps.
+   * Creates a ring of particles expanding from the player's feet.
+   * @param {number} x - Player X position
+   * @param {number} y - Player Y position
+   */
   spawnDoubleJumpParticles(x, y) {
     if (!this.scene) return;
 
@@ -132,6 +215,11 @@ class ParticleEffectsManager {
     }
   }
 
+  /**
+   * Updates all active particles. Called every frame.
+   * Handles particle movement, fading, scaling, and cleanup.
+   * @param {number} deltaTime - Time since last frame in seconds
+   */
   update(deltaTime) {
     // Update glide particles (iterate backwards for safe removal)
     for (let i = this.glideParticles.length - 1; i >= 0; i--) {
@@ -177,6 +265,10 @@ class ParticleEffectsManager {
     }
   }
 
+  /**
+   * Clears all active particles and returns them to their pools.
+   * Called when resetting the game or changing scenes.
+   */
   clear() {
     for (const particle of this.glideParticles) {
       this.returnGlideParticle(particle);
@@ -190,5 +282,6 @@ class ParticleEffectsManager {
   }
 }
 
+/** @type {ParticleEffectsManager} Singleton instance */
 export const particleEffects = new ParticleEffectsManager();
 

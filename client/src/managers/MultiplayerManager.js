@@ -1,3 +1,37 @@
+/**
+ * MultiplayerManager.js - Multiplayer Game Management
+ *
+ * Handles all multiplayer functionality including matchmaking,
+ * game synchronization, and race results.
+ *
+ * @module managers/MultiplayerManager
+ *
+ * ## Features:
+ * - Server connection and matchmaking
+ * - Remote player spawning and tracking
+ * - Position synchronization
+ * - Race countdown and start
+ * - Win/lose detection
+ * - Rematch functionality
+ *
+ * ## Multiplayer Flow:
+ * 1. Player clicks "Multiplayer" button
+ * 2. Connect to WebSocket server
+ * 3. Wait for opponent (matchmaking)
+ * 4. Countdown starts when both players ready
+ * 5. Race begins - positions sync continuously
+ * 6. First to top wins
+ * 7. Show results, offer rematch
+ *
+ * ## Network Events:
+ * - playerJoined: Opponent connected
+ * - countdown: Race starting
+ * - raceStart: Begin gameplay
+ * - playerPosition: Sync opponent position
+ * - playerWon: Someone reached the top
+ * - playerDisconnected: Opponent left
+ */
+
 import RemotePlayer from '../entities/RemotePlayer.js';
 import { networkManager } from '../network/NetworkManager.js';
 import { gameState, resetPhysicsState } from '../state/gameState.js';
@@ -14,13 +48,27 @@ import { LEVELS } from '../data/levelData.js';
 import * as UIManager from './UIManager.js';
 
 // ========================================
-// MULTIPLAYER MANAGER
+// MODULE STATE
 // ========================================
 
+/** @type {THREE.Scene|null} Reference to the game scene */
 let scene = null;
+
+/** @type {Player|null} Reference to the local player */
 let player1 = null;
+
+/** @type {HTMLElement|null} Reference to level display element */
 let levelDiv = null;
 
+// ========================================
+// INITIALIZATION
+// ========================================
+
+/**
+ * Initializes the multiplayer manager with scene and player references.
+ * @param {THREE.Scene} sceneRef - The game scene
+ * @param {Player} playerRef - The local player entity
+ */
 export function initMultiplayerManager(sceneRef, playerRef) {
   scene = sceneRef;
   player1 = playerRef;
@@ -29,6 +77,10 @@ export function initMultiplayerManager(sceneRef, playerRef) {
   setupUIEventListeners();
 }
 
+/**
+ * Sets up UI button event listeners for multiplayer controls.
+ * @private
+ */
 function setupUIEventListeners() {
   const elements = UIManager.getUIElements();
 
@@ -49,6 +101,10 @@ function setupUIEventListeners() {
   }
 }
 
+/**
+ * Starts the multiplayer matchmaking process.
+ * Connects to server and waits for an opponent.
+ */
 export async function startMultiplayer() {
   multiplayerState.isMultiplayerMode = true;
   multiplayerState.state = 'connecting';
@@ -99,6 +155,10 @@ export async function startMultiplayer() {
   }
 }
 
+/**
+ * Sets up all network event handlers for multiplayer.
+ * @private
+ */
 function setupNetworkHandlers() {
   networkManager.onPlayerJoined = (playerData) => {
     console.log('Opponent joined:', playerData);
@@ -228,6 +288,11 @@ function setupNetworkHandlers() {
   };
 }
 
+/**
+ * Creates a remote player entity at the specified position.
+ * @param {number} x - Initial X position
+ * @param {number} y - Initial Y position
+ */
 export function createRemotePlayer(x, y) {
   if (multiplayerState.remotePlayer) {
     multiplayerState.remotePlayer.remove(scene);
@@ -236,6 +301,9 @@ export function createRemotePlayer(x, y) {
   multiplayerState.remotePlayer.add(scene, x, y);
 }
 
+/**
+ * Removes the remote player entity from the scene.
+ */
 export function removeRemotePlayer() {
   if (multiplayerState.remotePlayer) {
     multiplayerState.remotePlayer.remove(scene);
@@ -243,6 +311,9 @@ export function removeRemotePlayer() {
   }
 }
 
+/**
+ * Cancels matchmaking and returns to the main menu.
+ */
 export function cancelMultiplayer() {
   networkManager.disconnect();
   resetMultiplayerState();
@@ -261,10 +332,16 @@ export function cancelMultiplayer() {
   UIManager.showStartOverlay();
 }
 
+/**
+ * Returns to the main menu from multiplayer mode.
+ */
 export function returnToMenuFromMultiplayer() {
   cancelMultiplayer();
 }
 
+/**
+ * Requests a rematch after a game ends.
+ */
 export function rematch() {
   UIManager.hideRaceResult();
 
@@ -294,18 +371,38 @@ export function rematch() {
   });
 }
 
+/**
+ * Sends the player's position to the server.
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} velocityY - Vertical velocity
+ */
 export function sendPosition(x, y, velocityY) {
   networkManager.sendPosition(x, y, velocityY);
 }
 
+/**
+ * Notifies the server that the player reached the top.
+ * @param {number} completionTime - Time taken to complete
+ */
 export function sendReachedTop(completionTime) {
   networkManager.sendReachedTop(completionTime);
 }
 
+/**
+ * Sends an attack action to the server.
+ * @param {number} x - Player X position
+ * @param {number} y - Player Y position
+ * @param {Object} direction - Attack direction {x, y}
+ */
 export function sendAttack(x, y, direction) {
   networkManager.sendAttack(x, y, direction);
 }
 
+/**
+ * Gets the local player's network ID.
+ * @returns {string|null} The player's socket ID
+ */
 export function getNetworkPlayerId() {
   return networkManager.playerId;
 }

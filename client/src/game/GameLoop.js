@@ -1,3 +1,35 @@
+/**
+ * GameLoop.js - Main Game Update Loop
+ *
+ * The heart of the game - runs every frame to update game state.
+ * Handles physics, input processing, collisions, and rendering.
+ *
+ * @module game/GameLoop
+ *
+ * ## Update Order (each frame):
+ * 1. Calculate delta time
+ * 2. Update particle effects
+ * 3. If paused: render only, skip physics
+ * 4. Process horizontal movement input
+ * 5. Handle attacks
+ * 6. Check horizontal collisions (walls)
+ * 7. Process jump/wall-jump input
+ * 8. Apply gravity/gliding physics
+ * 9. Update player rotation visuals
+ * 10. Move player vertically
+ * 11. Check vertical collisions (platforms, spikes)
+ * 12. Detect current level, load ahead
+ * 13. Update camera and UI
+ * 14. Send multiplayer position updates
+ * 15. Render scene
+ *
+ * ## Physics:
+ * - Gravity: Constant downward acceleration
+ * - Gliding: Reduced gravity when holding jump while falling
+ * - Wall stick: Zero velocity when touching wall
+ * - Double jump: Available after first jump, before landing
+ */
+
 import {
   gravity,
   fastFall,
@@ -30,16 +62,35 @@ import * as MultiplayerManager from '../managers/MultiplayerManager.js';
 import { particleEffects } from '../managers/ParticleEffectsManager.js';
 
 // ========================================
-// GAME LOOP
+// MODULE STATE
 // ========================================
 
+/** @type {number} Timestamp of last frame (for delta time calculation) */
 let lastTime = performance.now();
+
+/** @type {boolean} Whether particle effects have been initialized */
 let particleEffectsInitialized = false;
 
+// ========================================
+// PUBLIC API
+// ========================================
+
+/**
+ * Starts the game loop.
+ * Called once during initialization.
+ */
 export function startGameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+// ========================================
+// MAIN LOOP
+// ========================================
+
+/**
+ * Main game loop function - called every frame.
+ * @private
+ */
 function gameLoop() {
   requestAnimationFrame(gameLoop);
 

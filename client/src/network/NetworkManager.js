@@ -1,56 +1,106 @@
 /**
- * NetworkManager - Client-side networking layer for multiplayer
+ * NetworkManager.js - Client-Side Networking Layer
  *
  * Handles all communication with the game server via Socket.IO.
- * Acts as a bridge between the game logic (main.js) and the server.
+ * Acts as a bridge between the game logic and the server.
  *
+ * @module network/NetworkManager
+ *
+ * ## Architecture:
+ * - Uses Socket.IO for WebSocket communication
+ * - Event-based callbacks for game events
+ * - Singleton pattern (exported instance)
+ *
+ * ## Server Events (Incoming):
+ * - playerJoined: Another player joined the room
+ * - playerLeft: Another player disconnected
+ * - playerPosition: Remote player position update
+ * - countdown: Race countdown tick (3, 2, 1)
+ * - raceStart: Race has begun
+ * - gameOver: Race ended (win/disconnect)
+ * - knockback: This player was hit
+ * - playerHit: Any player was hit (for effects)
+ *
+ * ## Client Events (Outgoing):
+ * - findMatch: Request to join matchmaking
+ * - cancelMatch: Cancel matchmaking
+ * - playerPosition: Send local position update
+ * - playerAttack: Send attack action
+ * - rematch: Request rematch
+ *
+ * ## Usage:
+ * ```javascript
+ * import { networkManager } from './NetworkManager.js';
+ * await networkManager.connect(SERVER_URL);
+ * networkManager.onPlayerJoined = (player) => { ... };
+ * networkManager.findMatch();
+ * ```
  */
 
 import { io } from "socket.io-client";
 
+/**
+ * NetworkManager class - Handles server communication
+ * @class
+ */
 class NetworkManager {
+  /**
+   * Creates a new NetworkManager instance.
+   * Use the exported singleton instead of creating new instances.
+   */
   constructor() {
+    /** @type {Socket|null} Socket.IO socket instance */
     this.socket = null;
+
+    /** @type {string|null} This player's socket ID */
     this.playerId = null;
+
+    /** @type {number|null} This player's number (1 or 2) */
     this.playerNumber = null;
+
+    /** @type {string|null} Current room ID */
     this.roomId = null;
+
+    /** @type {number|null} Starting X position for this player */
     this.startX = null;
 
-    /** Called when another player joins the room */
+    // ---- Event Callbacks ----
+
+    /** @type {Function|null} Called when another player joins the room */
     this.onPlayerJoined = null;
 
-    /** Called when another player leaves/disconnects */
+    /** @type {Function|null} Called when another player leaves/disconnects */
     this.onPlayerLeft = null;
 
-    /** Called when receiving another player's position update */
+    /** @type {Function|null} Called when receiving another player's position update */
     this.onPlayerPosition = null;
 
-    /** Called during countdown (3, 2, 1) */
+    /** @type {Function|null} Called during countdown (3, 2, 1) */
     this.onCountdown = null;
 
-    /** Called when race starts (countdown finished) */
+    /** @type {Function|null} Called when race starts (countdown finished) */
     this.onRaceStart = null;
 
-    /** Called when game ends (win/disconnect) */
+    /** @type {Function|null} Called when game ends (win/disconnect) */
     this.onGameOver = null;
 
-    /** Called on connection error */
+    /** @type {Function|null} Called on connection error */
     this.onError = null;
 
-    /** Called when disconnected from server */
+    /** @type {Function|null} Called when disconnected from server */
     this.onDisconnect = null;
 
-    /** Called when this player gets hit and receives knockback */
+    /** @type {Function|null} Called when this player gets hit and receives knockback */
     this.onKnockback = null;
 
-    /** Called when any player gets hit (for visual feedback) */
+    /** @type {Function|null} Called when any player gets hit (for visual feedback) */
     this.onPlayerHit = null;
   }
 
   /**
-   * Connect to the game server
+   * Connects to the game server.
    * @param {string} serverUrl - The server URL
-   * @returns {Promise<void>} Resolves when connected
+   * @returns {Promise<void>} Resolves when connected, rejects on error
    */
   connect(serverUrl) {
     return new Promise((resolve, reject) => {

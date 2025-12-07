@@ -1,15 +1,41 @@
+/**
+ * ModelPreviewManager.js - Character Model Selection
+ *
+ * Manages the character model selection UI with 3D preview.
+ * Renders a small preview of each available character model.
+ *
+ * @module managers/ModelPreviewManager
+ *
+ * ## Features:
+ * - 3D model preview in a small canvas
+ * - Previous/Next navigation buttons
+ * - Auto-rotation animation
+ * - Selection persistence via localStorage
+ * - Support for .glb and .gltf formats
+ *
+ * ## Available Models:
+ * Models are loaded from /public/models/ directory.
+ * Each model is scaled and centered automatically.
+ *
+ * ## Preview Rendering:
+ * Uses a separate Three.js scene/camera/renderer
+ * for the preview canvas, independent of the main game.
+ */
+
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 // ========================================
-// MODEL PREVIEW MANAGER
+// CONFIGURATION
 // ========================================
 
-// Base path for assets (matches vite.config.js base)
+/** Base path for assets (matches vite.config.js base) */
 const BASE_PATH = import.meta.env.BASE_URL || '/';
 
-// Available models (GLTFLoader supports both .glb and .gltf formats)
-// Note: .gltf files with external .bin dependencies need those files present
+/**
+ * Available character models for selection.
+ * @type {Array<{name: string, file: string}>}
+ */
 const AVAILABLE_MODELS = [
   { name: 'Player', file: 'player.glb' },
   { name: 'Cookie', file: 'cookie.glb' },
@@ -17,15 +43,32 @@ const AVAILABLE_MODELS = [
   { name: 'Llama', file: 'llama.gltf' },
 ];
 
+// ========================================
+// MODULE STATE
+// ========================================
+
+/** @type {number} Currently selected model index */
 let currentModelIndex = 0;
+
+/** @type {THREE.Scene|null} Preview scene */
 let previewScene = null;
+
+/** @type {THREE.PerspectiveCamera|null} Preview camera */
 let previewCamera = null;
+
+/** @type {THREE.WebGLRenderer|null} Preview renderer */
 let previewRenderer = null;
+
+/** @type {THREE.Object3D|null} Currently loaded preview model */
 let previewModel = null;
+
+/** @type {number|null} Animation frame ID */
 let animationId = null;
+
+/** @type {boolean} Whether the preview has been initialized */
 let isInitialized = false;
 
-// Reusable loader instance
+/** Shared GLTFLoader instance for efficiency */
 const gltfLoader = new GLTFLoader();
 
 // UI elements
@@ -33,22 +76,46 @@ let modelNameEl = null;
 let prevBtn = null;
 let nextBtn = null;
 
+// ========================================
+// PUBLIC API
+// ========================================
+
+/**
+ * Gets the list of available models.
+ * @returns {Array<{name: string, file: string}>} Available models
+ */
 export function getAvailableModels() {
   return AVAILABLE_MODELS;
 }
 
+/**
+ * Gets the currently selected model index.
+ * @returns {number} Current model index
+ */
 export function getCurrentModelIndex() {
   return currentModelIndex;
 }
 
+/**
+ * Gets the full path to the currently selected model.
+ * @returns {string} Model file path
+ */
 export function getSelectedModelPath() {
   return `${BASE_PATH}models/${AVAILABLE_MODELS[currentModelIndex].file}`;
 }
 
+/**
+ * Gets the name of the currently selected model.
+ * @returns {string} Model name
+ */
 export function getSelectedModelName() {
   return AVAILABLE_MODELS[currentModelIndex].name;
 }
 
+/**
+ * Initializes the model preview system.
+ * Creates a separate Three.js scene for the preview canvas.
+ */
 export function initModelPreview() {
   const canvas = document.getElementById('model-preview-canvas');
   modelNameEl = document.getElementById('model-name');
@@ -110,6 +177,11 @@ export function initModelPreview() {
   animatePreview();
 }
 
+/**
+ * Loads a model into the preview scene.
+ * @private
+ * @param {number} index - Index of the model to load
+ */
 function loadPreviewModel(index) {
   if (!isInitialized) return;
 
@@ -164,6 +236,10 @@ function loadPreviewModel(index) {
   );
 }
 
+/**
+ * Animation loop for the preview scene.
+ * @private
+ */
 function animatePreview() {
   animationId = requestAnimationFrame(animatePreview);
 
@@ -177,18 +253,28 @@ function animatePreview() {
   }
 }
 
+/**
+ * Selects the next model in the list.
+ */
 export function selectNextModel() {
   currentModelIndex = (currentModelIndex + 1) % AVAILABLE_MODELS.length;
   loadPreviewModel(currentModelIndex);
   saveSelectedModel();
 }
 
+/**
+ * Selects the previous model in the list.
+ */
 export function selectPreviousModel() {
   currentModelIndex = (currentModelIndex - 1 + AVAILABLE_MODELS.length) % AVAILABLE_MODELS.length;
   loadPreviewModel(currentModelIndex);
   saveSelectedModel();
 }
 
+/**
+ * Selects a specific model by index.
+ * @param {number} index - Model index to select
+ */
 export function selectModel(index) {
   if (index >= 0 && index < AVAILABLE_MODELS.length) {
     currentModelIndex = index;
@@ -197,10 +283,17 @@ export function selectModel(index) {
   }
 }
 
+/**
+ * Saves the currently selected model to localStorage.
+ * @private
+ */
 function saveSelectedModel() {
   localStorage.setItem('blocky-selected-model', currentModelIndex.toString());
 }
 
+/**
+ * Loads the selected model from localStorage.
+ */
 export function loadSelectedModel() {
   const saved = localStorage.getItem('blocky-selected-model');
   if (saved !== null) {
@@ -211,6 +304,9 @@ export function loadSelectedModel() {
   }
 }
 
+/**
+ * Stops the preview animation loop.
+ */
 export function stopPreview() {
   if (animationId) {
     cancelAnimationFrame(animationId);
@@ -218,6 +314,9 @@ export function stopPreview() {
   }
 }
 
+/**
+ * Resumes the preview animation loop.
+ */
 export function resumePreview() {
   if (!animationId && isInitialized) {
     animatePreview();
