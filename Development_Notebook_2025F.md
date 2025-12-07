@@ -102,5 +102,86 @@ This project challenges you to design and develop a 3D interactive game experien
     - **Name**: Jesutofunmi Oyeleke
     - **Action**: I implemented the start and end game states using HTML/CSS overlays. The start screen introduces the game and allows the player to select a difficulty before beginning. The end screen appears when the player successfully completes the final level, congratulating them on their victory.
 
+**Iteration 9:**
+
+-  **Goal/Task/Rationale:** Break down main.js into multiple files to reduce complexity
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to break down the monolithic main.js file into separate modules. Created managers for Scene, UI, Level, Input, Collision, and Multiplayer. Also separated game state and constants into their own files.
+    - **Response/Result**: AI successfully created a modular architecture with clear separation of concerns. Each manager handles a specific aspect of the game.
+    - **Your Evaluation**: AI was accurate with the code structure. No clarification needed.
+
+**Iteration 10:**
+
+-  **Goal/Task/Rationale:** Add character model selection with 3D preview
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Asked AI to add a model selection menu with previews for multiple 3D character models (.glb and .gltf formats). Created ModelPreviewManager with a separate Three.js scene for the preview canvas.
+    - **Response/Result**: AI created a working model preview system with next/previous navigation and localStorage persistence for the selected model.
+    - **Your Evaluation**: AI was accurate. Had to specify rotation adjustments for specific models like the llama.
+
+**Iteration 11:**
+
+-  **Goal/Task/Rationale:** Add player knockout/attack system for multiplayer
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to add attack mechanics using J key or mouse click with directional aiming (WASD/arrows). Attack creates a hitbox in the aimed direction and applies knockback to hit players.
+    - **Response/Result**: AI implemented attack with cooldown, directional hitbox, model rotation during attack, and server-side knockback validation.
+    - **Your Evaluation**: AI was accurate. Had to specify the exact hitbox dimensions and that model should rotate 90 degrees, not 180.
+
+**Iteration 12:**
+
+-  **Goal/Task/Rationale:** Add gradient background with animated color blobs and particle systems
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Asked AI to add a gradient background with transparent color blobs, waterfall particles falling from the top, and star particles twinkling in the background.
+    - **Response/Result**: AI created custom shaders for the animated gradient background and two particle systems using BufferGeometry for performance.
+    - **Your Evaluation**: AI was accurate. Had to request larger particle sizes and wider waterfall spread multiple times.
+
+**Iteration 13:**
+
+-  **Goal/Task/Rationale:** Add background music system with volume control
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to create a music manager that shuffles tracks, plays all tracks before reshuffling, and persists volume to localStorage. Added a volume slider in the menu.
+    - **Response/Result**: AI created MusicManager class with shuffle queue, auto-advance, error recovery, and browser autoplay handling.
+    - **Your Evaluation**: AI was accurate with the implementation. No issues encountered.
+
+**Iteration 14:**
+
+-  **Goal/Task/Rationale:** Add glide and double jump particle effects
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Asked AI to add particle trails when player glides on walls and a burst of particles when double jumping. Requested object pooling for performance.
+    - **Response/Result**: AI created ParticleEffectsManager with cyan glide particles and orange jump burst particles, using object pooling and shared geometry.
+    - **Your Evaluation**: AI was accurate. No clarification needed.
+
+**Iteration 15:**
+
+-  **Goal/Task/Rationale:** Add procedural textures to platforms assigned by level
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to add subtle procedural textures to platforms (noise, grid, dots, lines patterns) assigned by level number instead of randomly. Ground platform uses minimal texture.
+    - **Response/Result**: AI created platformTextures.js with canvas-based texture generation, level-pattern mapping, and texture caching.
+    - **Your Evaluation**: AI was accurate. Had to request more visible textures multiple times.
+
+**Iteration 16:**
+
+-  **Goal/Task/Rationale:** Change attack indicator from red block to red particles
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Asked AI to replace the red box attack indicator with animated red particles that spread in the attack direction.
+    - **Response/Result**: AI created 18 particle spheres with pulsing scale, flickering opacity, and directional spread animation.
+    - **Your Evaluation**: AI was accurate. Had to specify larger particle areas and update server hitbox to match.
+
+**Iteration 17:**
+
+-  **Goal/Task/Rationale:** Add comprehensive JSDoc documentation to all client files
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to add detailed documentation to all client files including module headers, function JSDoc, parameter types, and return types.
+    - **Response/Result**: AI documented 20+ files with consistent JSDoc format including @module, @param, @returns, and @type annotations.
+    - **Your Evaluation**: AI was accurate and thorough with documentation standards.
+
 
 
