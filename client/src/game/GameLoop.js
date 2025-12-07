@@ -27,12 +27,14 @@ import {
 import * as UIManager from '../managers/UIManager.js';
 import * as SceneManager from '../managers/SceneManager.js';
 import * as MultiplayerManager from '../managers/MultiplayerManager.js';
+import { particleEffects } from '../managers/ParticleEffectsManager.js';
 
 // ========================================
 // GAME LOOP
 // ========================================
 
 let lastTime = performance.now();
+let particleEffectsInitialized = false;
 
 export function startGameLoop() {
   requestAnimationFrame(gameLoop);
@@ -48,6 +50,15 @@ function gameLoop() {
   const player1 = SceneManager.getPlayer();
   const platforms = getPlatforms();
   const keys = getKeys();
+
+  // Initialize particle effects once we have the scene
+  if (!particleEffectsInitialized) {
+    particleEffects.init(SceneManager.getScene());
+    particleEffectsInitialized = true;
+  }
+
+  // Update particle effects every frame
+  particleEffects.update(deltaTime);
 
   // Pause all gameplay updates until the user starts the game
   if (gameState.isPaused) {
@@ -149,6 +160,9 @@ function gameLoop() {
       gameState.jumpCount = 2;
       gameState.canDoubleJump = false;
       gameState.jumpKeyReleased = false;
+
+      // Spawn double jump particles
+      particleEffects.spawnDoubleJumpParticles(player1.position.x, player1.position.y);
     }
   }
 
@@ -165,6 +179,11 @@ function gameLoop() {
       gameState.glideDirection = 1;
     } else {
       gameState.glideDirection = 0;
+    }
+
+    // Spawn glide particles when moving to the sides
+    if (gameState.glideDirection !== 0) {
+      particleEffects.spawnGlideParticles(player1.position.x, player1.position.y, gameState.glideDirection);
     }
 
     // Apply reduced gravity while gliding
