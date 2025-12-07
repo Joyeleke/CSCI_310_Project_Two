@@ -218,6 +218,32 @@ if (elements.restartGameBtn) {
   elements.restartGameBtn.addEventListener("click", restartGame);
 }
 
+// Controls modal event listeners
+const controlsBtn = document.getElementById('controls-btn');
+const controlsModal = document.getElementById('controls-modal');
+const closeControlsBtn = document.getElementById('close-controls-btn');
+
+if (controlsBtn && controlsModal) {
+  controlsBtn.addEventListener('click', () => {
+    controlsModal.style.display = 'flex';
+  });
+}
+
+if (closeControlsBtn && controlsModal) {
+  closeControlsBtn.addEventListener('click', () => {
+    controlsModal.style.display = 'none';
+  });
+}
+
+// Close modal when clicking outside
+if (controlsModal) {
+  controlsModal.addEventListener('click', (e) => {
+    if (e.target === controlsModal) {
+      controlsModal.style.display = 'none';
+    }
+  });
+}
+
 // ========================================
 // INPUT HANDLERS
 // ========================================

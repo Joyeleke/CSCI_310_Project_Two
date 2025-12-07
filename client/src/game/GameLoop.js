@@ -205,8 +205,8 @@ function gameLoop() {
       gameState.canDoubleJump = true;
       gameState.jumpKeyReleased = false;
     }
-    // Second jump (after releasing the key)
-    else if (gameState.canDoubleJump && gameState.jumpCount === 1) {
+    // Second jump (in air - either after first jump OR after falling off platform)
+    else if (!gameState.isOnGround && !gameState.isOnWall && gameState.jumpCount < 2) {
       gameState.velocityY = gameState.jumpStrength * 0.7;
       gameState.jumpCount = 2;
       gameState.canDoubleJump = false;

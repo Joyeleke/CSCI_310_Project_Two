@@ -362,6 +362,20 @@
           Play Online
         </button>
         <button
+          id="controls-btn"
+          style="
+            padding: 8px 16px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-left: 8px;
+            background: #555;
+            color: white;
+            border: none;
+          "
+        >
+          Controls
+        </button>
+        <button
           id="restart-game-btn"
           style="
             padding: 8px 16px;
@@ -372,6 +386,80 @@
           "
         >
           Restart Game
+        </button>
+      </div>
+    </div>
+
+    <!-- Controls Modal -->
+    <div
+      id="controls-modal"
+      style="
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        font-family: monospace;
+        text-align: center;
+        z-index: 200;
+      "
+    >
+      <div style="background: #222; padding: 24px 32px; border-radius: 12px; border: 2px solid #444; max-width: 400px;">
+        <h2 style="margin: 0 0 16px 0; font-size: 24px;">Controls</h2>
+        <table style="margin: 0 auto; border-collapse: collapse; width: 100%;">
+          <thead>
+            <tr>
+              <th style="border-bottom: 1px solid #555; padding: 8px; text-align: left;">Action</th>
+              <th style="border-bottom: 1px solid #555; padding: 8px; text-align: right;">Key</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Move Left</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">A</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">←</kbd></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Move Right</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">D</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">→</kbd></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Jump / Double Jump</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">W</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">↑</kbd></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Fast Fall / Drop</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">S</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">↓</kbd></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Glide</td>
+              <td style="padding: 8px; text-align: right;">Hold <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">W</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">↑</kbd> while falling</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Attack</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">J</kbd> / <kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">Click</kbd> + Direction</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; text-align: left;">Pause</td>
+              <td style="padding: 8px; text-align: right;"><kbd style="background: #444; padding: 2px 6px; border-radius: 3px;">ESC</kbd></td>
+            </tr>
+          </tbody>
+        </table>
+        <button
+          id="close-controls-btn"
+          style="
+            margin-top: 20px;
+            padding: 8px 24px;
+            font-family: inherit;
+            cursor: pointer;
+            background: #4fc3f7;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+          "
+        >
+          Close
         </button>
       </div>
     </div>

@@ -183,5 +183,14 @@ This project challenges you to design and develop a 3D interactive game experien
     - **Response/Result**: AI documented 20+ files with consistent JSDoc format including @module, @param, @returns, and @type annotations.
     - **Your Evaluation**: AI was accurate and thorough with documentation standards.
 
+**Iteration 18:**
+
+-  **Goal/Task/Rationale:** Add a Controls button to show keybinds in the menu
+-  **What do you do?** 
+    - **Name**: Jonathan Gonzalez
+    - **Action**: Prompted AI to add a button in the menu that displays a modal with all game keybinds and their actions.
+    - **Response/Result**: AI added a "Controls" button next to other menu buttons and created a styled modal overlay showing all keybinds in a table format. Included close functionality via button click or clicking outside the modal.
+    - **Your Evaluation**: AI execution was flawless. No clarification needed.
+
 
 
