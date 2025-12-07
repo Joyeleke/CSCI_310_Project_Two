@@ -141,7 +141,11 @@ if (elements.restartGameBtn) {
 setupInputHandlers({
   onPause: () => UIManager.showPauseMenu(),
   onResume: resumeGame,
-  onStart: startGame
+  onStart: startGame,
+  onAttack: () => {
+    // Attack callback - visual feedback is handled in GameLoop
+    console.log('Attack triggered!');
+  }
 });
 
 // ========================================

@@ -5,6 +5,13 @@
 
 import GamePlayer from './GamePlayer.js';
 
+// Attack/Knockback constants
+const ATTACK_RANGE = 1.2; // How far the attack hitbox extends
+const ATTACK_HEIGHT = 1.2; // Height of the attack hitbox
+const KNOCKBACK_X = 5; // Horizontal knockback force
+const KNOCKBACK_Y = 8; // Vertical knockback force
+const HIT_COOLDOWN = 500; // ms before player can be hit again
+
 export default class GameRoom {
   constructor(id, io) {
     this.id = id;
@@ -203,5 +210,94 @@ export default class GameRoom {
    */
   isAvailable() {
     return this.state === 'waiting' && !this.isFull();
+  }
+
+  /**
+   * Handle an attack from a player
+   * @param {string} attackerId - The attacking player's socket ID
+   * @param {Object} data - Attack data { x, y, direction: { x, y } }
+   */
+  handleAttack(attackerId, data) {
+    if (this.state !== 'racing') return;
+
+    const attacker = this.players.get(attackerId);
+    if (!attacker) return;
+
+    const { x, y, direction } = data;
+    const currentTime = Date.now();
+
+    // Calculate attack hitbox center
+    let attackCenterX = x;
+    let attackCenterY = y;
+
+    if (direction.x !== 0) {
+      attackCenterX += direction.x * 0.8;
+    } else {
+      attackCenterY += direction.y * 0.8;
+    }
+
+    // Check collision with other players
+    for (const [playerId, player] of this.players) {
+      if (playerId === attackerId) continue; // Don't hit yourself
+
+      // Check hit cooldown
+      if (currentTime - player.lastHitTime < HIT_COOLDOWN) continue;
+
+      // Get player bounds
+      const playerLeft = player.x - 0.4;
+      const playerRight = player.x + 0.4;
+      const playerBottom = player.y - 0.7;
+      const playerTop = player.y + 0.7;
+
+      // Get attack bounds
+      const attackLeft = attackCenterX - 0.4;
+      const attackRight = attackCenterX + 0.4;
+      const attackBottom = attackCenterY - 0.6;
+      const attackTop = attackCenterY + 0.6;
+
+      // Check AABB collision
+      const isHit =
+        attackRight > playerLeft &&
+        attackLeft < playerRight &&
+        attackBottom < playerTop &&
+        attackTop > playerBottom;
+
+      if (isHit) {
+        player.lastHitTime = currentTime;
+
+        // Calculate knockback direction
+        let knockbackX = 0;
+        let knockbackY = KNOCKBACK_Y; // Always some upward force
+
+        if (direction.x !== 0) {
+          // Horizontal attack - knock in attack direction
+          knockbackX = direction.x * KNOCKBACK_X;
+        } else if (direction.y > 0) {
+          // Attack upward - knock up and slightly away
+          knockbackY = KNOCKBACK_Y * 1.5;
+          knockbackX = (player.x > attacker.x ? 1 : -1) * (KNOCKBACK_X * 0.5);
+        } else {
+          // Attack downward - knock down and away
+          knockbackY = -KNOCKBACK_Y * 0.5;
+          knockbackX = (player.x > attacker.x ? 1 : -1) * (KNOCKBACK_X * 0.5);
+        }
+
+        console.log(`Player ${attacker.playerNumber} hit Player ${player.playerNumber} in room ${this.id}`);
+
+        // Notify the hit player about the knockback
+        player.socket.emit('knockback', {
+          x: knockbackX,
+          y: knockbackY,
+          attackerId: attackerId
+        });
+
+        // Notify all players about the hit for visual feedback
+        this.io.to(this.id).emit('playerHit', {
+          hitPlayerId: player.id,
+          attackerId: attackerId,
+          direction: direction
+        });
+      }
+    }
   }
 }

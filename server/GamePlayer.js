@@ -13,6 +13,7 @@ export default class GamePlayer {
     this.state = {}; // Additional state info (e.g. jumping, moving)
     this.finished = false;
     this.finishTime = null;
+    this.lastHitTime = 0; // Track when player was last hit (for cooldown)
   }
 
   /**

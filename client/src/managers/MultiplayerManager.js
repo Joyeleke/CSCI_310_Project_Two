@@ -167,6 +167,65 @@ function setupNetworkHandlers() {
   networkManager.onError = (error) => {
     console.error('Network error:', error);
   };
+
+  networkManager.onKnockback = (data) => {
+    // Apply knockback to local player
+    gameState.velocityY = data.y;
+    player1.position.x += data.x * 0.3; // Apply some immediate horizontal displacement
+
+    // Flash the local player red to indicate being hit
+    if (player1.group) {
+      const meshes = [];
+      player1.group.traverse((child) => {
+        if (child.isMesh && child.material && child.material.color) {
+          meshes.push({ mesh: child, originalColor: child.material.color.getHex() });
+        }
+      });
+
+      meshes.forEach(({ mesh }) => {
+        if (mesh.material.color) {
+          mesh.material.color.setHex(0xff0000);
+        }
+      });
+
+      setTimeout(() => {
+        meshes.forEach(({ mesh, originalColor }) => {
+          if (mesh.material.color) {
+            mesh.material.color.setHex(originalColor);
+          }
+        });
+      }, 200);
+    }
+  };
+
+  networkManager.onPlayerHit = (data) => {
+    // Visual feedback when remote player is hit
+    if (data.hitPlayerId !== networkManager.playerId && multiplayerState.remotePlayer) {
+      // Flash the remote player
+      if (multiplayerState.remotePlayer.group) {
+        const meshes = [];
+        multiplayerState.remotePlayer.group.traverse((child) => {
+          if (child.isMesh && child.material && child.material.color) {
+            meshes.push({ mesh: child, originalColor: child.material.color.getHex() });
+          }
+        });
+
+        meshes.forEach(({ mesh }) => {
+          if (mesh.material.color) {
+            mesh.material.color.setHex(0xff0000);
+          }
+        });
+
+        setTimeout(() => {
+          meshes.forEach(({ mesh, originalColor }) => {
+            if (mesh.material.color) {
+              mesh.material.color.setHex(originalColor);
+            }
+          });
+        }, 200);
+      }
+    }
+  };
 }
 
 export function createRemotePlayer(x, y) {
@@ -241,6 +300,10 @@ export function sendPosition(x, y, velocityY) {
 
 export function sendReachedTop(completionTime) {
   networkManager.sendReachedTop(completionTime);
+}
+
+export function sendAttack(x, y, direction) {
+  networkManager.sendAttack(x, y, direction);
 }
 
 export function getNetworkPlayerId() {

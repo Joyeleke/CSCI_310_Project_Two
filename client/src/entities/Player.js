@@ -20,7 +20,88 @@ export default class Player {
     this.group.add(this.hitbox);
 
     this.model = null;
+    this.attackIndicator = null;
+    this.baseRotationY = 0; // Store base rotation for model-specific adjustments
+    this.createAttackIndicator();
     this.loadModel();
+  }
+
+  createAttackIndicator() {
+    // Create a visual indicator for the attack (a simple punch/swipe effect)
+    const attackGeometry = new THREE.BoxGeometry(0.8, 0.4, 0.3);
+    const attackMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff4444,
+      transparent: true,
+      opacity: 0.7
+    });
+    this.attackIndicator = new THREE.Mesh(attackGeometry, attackMaterial);
+    this.attackIndicator.visible = false;
+    this.attackIndicator.position.set(0.8, 0, 0); // Position to the right of player
+    this.group.add(this.attackIndicator);
+  }
+
+  showAttack(direction) {
+    if (this.attackIndicator && direction) {
+      this.attackIndicator.visible = true;
+      // Position attack indicator based on direction
+      if (direction.x !== 0) {
+        // Horizontal attack (left/right) - taller hitbox
+        this.attackIndicator.position.set(direction.x * 0.8, 0, 0);
+        this.attackIndicator.scale.set(1, 3, 1); // Scale Y to make it taller
+
+        // Rotate the model 90 degrees to face the attack direction
+        if (this.model) {
+          if (direction.x > 0) {
+            this.model.rotation.y = this.baseRotationY - Math.PI / 2; // Rotate 90 degrees right
+          } else {
+            this.model.rotation.y = this.baseRotationY + Math.PI / 2; // Rotate 90 degrees left
+          }
+        }
+      } else {
+        // Vertical attack (up/down) - taller hitbox
+        this.attackIndicator.position.set(0, direction.y * 0.8, 0);
+        this.attackIndicator.scale.set(1, 3, 1); // Scale Y to make it taller
+      }
+    }
+  }
+
+  hideAttack() {
+    if (this.attackIndicator) {
+      this.attackIndicator.visible = false;
+      this.attackIndicator.scale.set(1, 1, 1); // Reset scale
+    }
+    // Reset model rotation to base rotation
+    if (this.model) {
+      this.model.rotation.y = this.baseRotationY;
+    }
+  }
+
+  // Get the attack hitbox bounds in world coordinates
+  getAttackBounds(direction) {
+    if (!direction) return null;
+
+    let centerX = this.group.position.x;
+    let centerY = this.group.position.y;
+
+    if (direction.x !== 0) {
+      // Horizontal attack - taller height for side attacks
+      centerX += direction.x * 0.8;
+      return {
+        left: centerX - 0.4,
+        right: centerX + 0.4,
+        bottom: centerY - 0.6,
+        top: centerY + 0.6
+      };
+    } else {
+      // Vertical attack - taller height for up/down attacks
+      centerY += direction.y * 0.8;
+      return {
+        left: centerX - 0.4,
+        right: centerX + 0.4,
+        bottom: centerY - 0.6,
+        top: centerY + 0.6
+      };
+    }
   }
 
   loadModel() {
@@ -49,8 +130,11 @@ export default class Player {
 
         // Apply model-specific rotations
         if (this.modelPath.includes('llama.gltf')) {
-          this.model.rotation.y = Math.PI; // Rotate 180 degrees on X axis
+          this.baseRotationY = Math.PI; // Llama needs 180 degree base rotation
+        } else {
+          this.baseRotationY = 0;
         }
+        this.model.rotation.y = this.baseRotationY;
 
         this.group.add(this.model);
       },

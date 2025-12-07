@@ -48,3 +48,10 @@ export const playerStartPositionY = groundTopY + playerHeight / 2;
 export const POSITION_SEND_INTERVAL = 40; // ms (~25 times per second)
 export const COLLISION_COOLDOWN = 500; // ms
 
+// Attack/Knockout
+export const ATTACK_DURATION = 300; // ms - how long the attack hitbox is active
+export const ATTACK_COOLDOWN = 500; // ms - time before player can attack again
+export const ATTACK_RANGE = 1.5; // units - how far the attack reaches
+export const ATTACK_KNOCKBACK_X = 8; // horizontal knockback force
+export const ATTACK_KNOCKBACK_Y = 6; // vertical knockback force
+

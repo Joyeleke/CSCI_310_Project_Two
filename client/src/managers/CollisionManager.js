@@ -1,10 +1,17 @@
-import { playerWidth, playerHeight, COLLISION_COOLDOWN } from '../config/constants.js';
+import {
+  playerWidth,
+  playerHeight,
+  COLLISION_COOLDOWN
+} from '../config/constants.js';
 import { gameState } from '../state/gameState.js';
 import { multiplayerState } from '../state/multiplayerState.js';
 
 // ========================================
 // COLLISION MANAGER
 // ========================================
+
+// Track when the last attack hit occurred to prevent multiple hits from same attack
+let lastAttackHitTime = 0;
 
 export function checkCollision(platform, player, prevX, prevY) {
   const pBottom = player.position.y - playerHeight / 2;
@@ -142,5 +149,73 @@ export function checkPlayerCollision(player) {
       }
     }
   }
+}
+
+// ========================================
+// ATTACK COLLISION DETECTION
+// ========================================
+
+export function checkAttackCollision(player) {
+  const remotePlayer = multiplayerState.remotePlayer;
+  if (!remotePlayer || !remotePlayer.position) return false;
+
+  // Must have an attack direction
+  if (!gameState.attackDirection) return false;
+
+  // Prevent multiple hits from the same attack
+  const currentTime = performance.now();
+  if (currentTime - lastAttackHitTime < 300) return false;
+
+  // Get attack bounds from player using the attack direction
+  const attackBounds = player.getAttackBounds(gameState.attackDirection);
+  if (!attackBounds) return false;
+
+  // Get remote player bounds
+  const p2Left = remotePlayer.position.x - playerWidth / 2;
+  const p2Right = remotePlayer.position.x + playerWidth / 2;
+  const p2Bottom = remotePlayer.position.y - playerHeight / 2;
+  const p2Top = remotePlayer.position.y + playerHeight / 2;
+
+  // Check AABB overlap between attack and remote player
+  const isHit =
+    attackBounds.right > p2Left &&
+    attackBounds.left < p2Right &&
+    attackBounds.bottom < p2Top &&
+    attackBounds.top > p2Bottom;
+
+  if (isHit) {
+    lastAttackHitTime = currentTime;
+
+    // Apply knockback to the local player's velocity as recoil (small)
+    gameState.velocityY = Math.max(gameState.velocityY, 2);
+
+    // Flash the remote player to indicate hit
+    if (remotePlayer.group) {
+      const meshes = [];
+      remotePlayer.group.traverse((child) => {
+        if (child.isMesh && child.material) {
+          meshes.push({ mesh: child, originalColor: child.material.color ? child.material.color.getHex() : 0xffffff });
+        }
+      });
+
+      meshes.forEach(({ mesh }) => {
+        if (mesh.material.color) {
+          mesh.material.color.setHex(0xff0000);
+        }
+      });
+
+      setTimeout(() => {
+        meshes.forEach(({ mesh, originalColor }) => {
+          if (mesh.material.color) {
+            mesh.material.color.setHex(originalColor);
+          }
+        });
+      }, 200);
+    }
+
+    return true;
+  }
+
+  return false;
 }
 

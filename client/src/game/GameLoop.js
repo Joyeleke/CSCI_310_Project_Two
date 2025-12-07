@@ -10,7 +10,8 @@ import {
   playerStartPositionX,
   playerStartPositionY,
   groundPositionY,
-  POSITION_SEND_INTERVAL
+  POSITION_SEND_INTERVAL,
+  ATTACK_DURATION
 } from '../config/constants.js';
 import { gameState, resetPhysicsState } from '../state/gameState.js';
 import { multiplayerState } from '../state/multiplayerState.js';
@@ -62,10 +63,41 @@ function gameLoop() {
   const prevY = player1.position.y;
 
   // Horizontal movement
-  if ((keys["KeyA"] || keys["ArrowLeft"]) && gameState.canMove)
+  if ((keys["KeyA"] || keys["ArrowLeft"]) && gameState.canMove) {
     player1.position.x -= moveSpeed * deltaTime;
-  if ((keys["KeyD"] || keys["ArrowRight"]) && gameState.canMove)
+    gameState.facingDirection = -1; // Facing left
+  }
+  if ((keys["KeyD"] || keys["ArrowRight"]) && gameState.canMove) {
     player1.position.x += moveSpeed * deltaTime;
+    gameState.facingDirection = 1; // Facing right
+  }
+
+  // Handle attack state and visual
+  if (gameState.isAttacking) {
+    const attackElapsed = currentTime - gameState.attackStartTime;
+
+    if (attackElapsed < ATTACK_DURATION) {
+      // Show attack indicator using the stored attack direction
+      player1.showAttack(gameState.attackDirection);
+
+      // Send attack to server on the first frame of attack (multiplayer)
+      if (multiplayerState.isMultiplayerMode && multiplayerState.state === 'racing') {
+        // Only send once at the start of the attack
+        if (attackElapsed < 50) { // Within first 50ms
+          MultiplayerManager.sendAttack(
+            player1.position.x,
+            player1.position.y,
+            gameState.attackDirection
+          );
+        }
+      }
+    } else {
+      // Attack finished
+      gameState.isAttacking = false;
+      gameState.attackDirection = null;
+      player1.hideAttack();
+    }
+  }
 
   // Check horizontal collisions
   gameState.isOnWall = false;
@@ -200,6 +232,9 @@ function gameLoop() {
           player1.position.y = playerStartPositionY;
           gameState.canMove = true;
           resetPhysicsState();
+          // Reset timer on death
+          gameState.gameStartTime = performance.now();
+          gameState.totalPausedTime = 0;
         }, 500);
         SceneManager.render();
         return;
@@ -232,6 +267,9 @@ function gameLoop() {
       player1.position.y = playerStartPositionY;
       gameState.canMove = true;
       resetPhysicsState();
+      // Reset timer on death
+      gameState.gameStartTime = performance.now();
+      gameState.totalPausedTime = 0;
     }, 500);
   }
 

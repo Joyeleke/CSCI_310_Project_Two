@@ -39,6 +39,12 @@ class NetworkManager {
 
     /** Called when disconnected from server */
     this.onDisconnect = null;
+
+    /** Called when this player gets hit and receives knockback */
+    this.onKnockback = null;
+
+    /** Called when any player gets hit (for visual feedback) */
+    this.onPlayerHit = null;
   }
 
   /**
@@ -100,6 +106,16 @@ class NetworkManager {
       this.socket.on("gameOver", (data) => {
         console.log("[Network] Game over:", data);
         if (this.onGameOver) this.onGameOver(data);
+      });
+
+      this.socket.on("knockback", (data) => {
+        console.log("[Network] Received knockback:", data);
+        if (this.onKnockback) this.onKnockback(data);
+      });
+
+      this.socket.on("playerHit", (data) => {
+        console.log("[Network] Player hit:", data);
+        if (this.onPlayerHit) this.onPlayerHit(data);
       });
     });
   }
@@ -165,6 +181,18 @@ class NetworkManager {
 
     console.log(`[Network] Sending reachedTop with time: ${time}ms`);
     this.socket.emit("reachedTop", { time });
+  }
+
+  /**
+   * Send an attack to the server
+   * @param {number} x - Player X position
+   * @param {number} y - Player Y position
+   * @param {Object} direction - Attack direction { x: -1/0/1, y: -1/0/1 }
+   */
+  sendAttack(x, y, direction) {
+    if (!this.socket) return;
+
+    this.socket.emit("attack", { x, y, direction });
   }
 
   /**

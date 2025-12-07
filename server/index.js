@@ -78,6 +78,18 @@ io.on("connection", (socket) => {
   });
 
   /**
+   * Player performs an attack
+   */
+  socket.on("attack", (data) => {
+    if (!socket.roomId) return;
+
+    const room = gameState.getRoom(socket.roomId);
+    if (room) {
+      room.handleAttack(socket.id, data);
+    }
+  });
+
+  /**
    * Player requests to leave current game
    */
   socket.on("leaveGame", () => {

@@ -23,6 +23,13 @@ export const gameState = {
   canWallJump: false,
   wallSide: null,
 
+  // Attack state
+  isAttacking: false,
+  attackStartTime: 0,
+  attackCooldown: 0,
+  attackDirection: null, // { x: -1/0/1, y: -1/0/1 } direction of the attack
+  facingDirection: 1, // 1 = right, -1 = left
+
   // Jump settings
   jumpStrength: defaultJumpStrength,
   selectedDifficultyLabel: "Medium",
