@@ -8,7 +8,6 @@ import {
   playerWidth,
   playerHeight,
   playerDepth,
-  playerColor,
   playerStartPositionX,
   playerStartPositionY,
   spikeHitColor
@@ -18,6 +17,7 @@ import Platform from '../entities/Platform.js';
 import { setGroundPlatform, getPlatforms } from './LevelManager.js';
 import { gameState } from '../state/gameState.js';
 import { LEVELS } from '../data/levelData.js';
+import { getSelectedModelPath } from './ModelPreviewManager.js';
 
 // ========================================
 // SCENE MANAGER
@@ -58,8 +58,9 @@ export function initScene() {
   dirLight.shadow.camera.far = 100;
   scene.add(dirLight);
 
-  // Create player
-  player1 = new Player(playerWidth, playerHeight, playerDepth, playerColor);
+  // Create player with selected model
+  const modelPath = getSelectedModelPath();
+  player1 = new Player(playerWidth, playerHeight, playerDepth, modelPath);
   player1.add(scene, playerStartPositionX, playerStartPositionY);
 
   // Create ground
@@ -133,5 +134,11 @@ export function resetSpikeHitFeedback(currentTime) {
 
 export function render() {
   renderer.render(scene, camera);
+}
+
+export function changePlayerModel(modelPath) {
+  if (player1) {
+    player1.changeModel(modelPath);
+  }
 }
 

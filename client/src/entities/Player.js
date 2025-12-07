@@ -1,11 +1,15 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+// Base path for assets (matches vite.config.js base)
+const BASE_PATH = import.meta.env.BASE_URL || '/';
+
 export default class Player {
-  constructor(width, height, depth) {
+  constructor(width, height, depth, modelPath = `${BASE_PATH}models/player.glb`) {
     this.width = width;
     this.height = height;
     this.depth = depth;
+    this.modelPath = modelPath;
 
     // Invisible bounding box for collisions
     const geometry = new THREE.BoxGeometry(width, height, depth);
@@ -23,7 +27,7 @@ export default class Player {
     const loader = new GLTFLoader();
 
     loader.load(
-      "/CSCI_310_Project_Two/models/player.glb",
+      this.modelPath,
       (gltf) => {
         this.model = gltf.scene;
 
@@ -43,6 +47,11 @@ export default class Player {
         // We want the bottom of the model to align with the bottom of the hitbox
         this.model.position.y = 0; // Center the model with the hitbox center
 
+        // Apply model-specific rotations
+        if (this.modelPath.includes('llama.gltf')) {
+          this.model.rotation.y = Math.PI; // Rotate 180 degrees on X axis
+        }
+
         this.group.add(this.model);
       },
       undefined,
@@ -54,5 +63,17 @@ export default class Player {
     this.group.position.set(x, y, 0);
     scene.add(this.group);
     this.position = this.group.position;
+  }
+
+  changeModel(newModelPath) {
+    // Remove existing model from group
+    if (this.model) {
+      this.group.remove(this.model);
+      this.model = null;
+    }
+
+    // Load the new model
+    this.modelPath = newModelPath;
+    this.loadModel();
   }
 }

@@ -13,6 +13,7 @@ import * as SceneManager from './managers/SceneManager.js';
 import * as UIManager from './managers/UIManager.js';
 import * as LevelManager from './managers/LevelManager.js';
 import * as MultiplayerManager from './managers/MultiplayerManager.js';
+import * as ModelPreviewManager from './managers/ModelPreviewManager.js';
 import { setupInputHandlers } from './managers/InputManager.js';
 import { startGameLoop } from './game/GameLoop.js';
 
@@ -29,6 +30,10 @@ MultiplayerManager.initMultiplayerManager(scene, player1);
 // Load personal bests
 loadPersonalBests();
 UIManager.updatePBDisplay();
+
+// Initialize model preview and load saved selection
+ModelPreviewManager.loadSelectedModel();
+ModelPreviewManager.initModelPreview();
 
 // Load initial level
 LevelManager.spawnLevel(scene, 1);
@@ -48,6 +53,10 @@ function startGame() {
     gameState.jumpStrength = v === "easy" ? 15 : v === "hard" ? 10 : 13.5;
     gameState.selectedDifficultyLabel = v === "easy" ? "Easy" : v === "hard" ? "Hard" : "Medium";
   }
+
+  // Apply the selected character model
+  const selectedModelPath = ModelPreviewManager.getSelectedModelPath();
+  SceneManager.changePlayerModel(selectedModelPath);
 
   // Initialize timer
   gameState.gameStartTime = performance.now();

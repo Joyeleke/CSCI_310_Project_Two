@@ -10,6 +10,7 @@ const elements = {
   startBtn: document.getElementById("start-btn"),
   restartGameBtn: document.getElementById("restart-game-btn"),
   difficultySection: document.getElementById("difficulty-section"),
+  modelSection: document.getElementById("model-section"),
   overlayTitle: document.getElementById("overlay-title"),
   overlayText: document.getElementById("overlay-text"),
   overlayMsg: document.getElementById("overlay-msg"),
@@ -113,6 +114,7 @@ export function showPauseMenu() {
   if (elements.startBtn) elements.startBtn.textContent = "Resume";
   if (elements.restartGameBtn) elements.restartGameBtn.style.display = "inline-block";
   if (elements.difficultySection) elements.difficultySection.style.display = "none";
+  if (elements.modelSection) elements.modelSection.style.display = "none";
   if (elements.pbTableSection) elements.pbTableSection.style.display = "block";
 
   updatePBDisplay();
@@ -140,6 +142,7 @@ export function showWinOverlay() {
   if (elements.startBtn) elements.startBtn.textContent = "Restart";
   if (elements.restartGameBtn) elements.restartGameBtn.style.display = "none";
   if (elements.difficultySection) elements.difficultySection.style.display = "block";
+  if (elements.modelSection) elements.modelSection.style.display = "block";
   if (elements.pbTableSection) elements.pbTableSection.style.display = "none";
 
   showOverlay();
@@ -152,6 +155,7 @@ export function showStartOverlay() {
   if (elements.startBtn) elements.startBtn.textContent = "Start";
   if (elements.restartGameBtn) elements.restartGameBtn.style.display = "none";
   if (elements.difficultySection) elements.difficultySection.style.display = "block";
+  if (elements.modelSection) elements.modelSection.style.display = "block";
   if (elements.pbTableSection) elements.pbTableSection.style.display = "none";
 
   showOverlay();
