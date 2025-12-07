@@ -6,8 +6,9 @@
 import GamePlayer from './GamePlayer.js';
 
 // Attack/Knockback constants
-const ATTACK_RANGE = 1.2; // How far the attack hitbox extends
-const ATTACK_HEIGHT = 1.2; // Height of the attack hitbox
+const ATTACK_OFFSET = 1.0; // How far the attack hitbox center is offset from player
+const ATTACK_WIDTH = 1.6; // Width of the attack hitbox (left/right from center)
+const ATTACK_HEIGHT = 2.0; // Height of the attack hitbox (top/bottom from center)
 const KNOCKBACK_X = 5; // Horizontal knockback force
 const KNOCKBACK_Y = 8; // Vertical knockback force
 const HIT_COOLDOWN = 500; // ms before player can be hit again
@@ -226,14 +227,14 @@ export default class GameRoom {
     const { x, y, direction } = data;
     const currentTime = Date.now();
 
-    // Calculate attack hitbox center
+    // Calculate attack hitbox center - larger offset
     let attackCenterX = x;
     let attackCenterY = y;
 
     if (direction.x !== 0) {
-      attackCenterX += direction.x * 0.8;
+      attackCenterX += direction.x * ATTACK_OFFSET;
     } else {
-      attackCenterY += direction.y * 0.8;
+      attackCenterY += direction.y * ATTACK_OFFSET;
     }
 
     // Check collision with other players
@@ -249,11 +250,13 @@ export default class GameRoom {
       const playerBottom = player.y - 0.7;
       const playerTop = player.y + 0.7;
 
-      // Get attack bounds
-      const attackLeft = attackCenterX - 0.4;
-      const attackRight = attackCenterX + 0.4;
-      const attackBottom = attackCenterY - 0.6;
-      const attackTop = attackCenterY + 0.6;
+      // Get attack bounds - using larger hitbox
+      const halfWidth = ATTACK_WIDTH / 2;
+      const halfHeight = ATTACK_HEIGHT / 2;
+      const attackLeft = attackCenterX - halfWidth;
+      const attackRight = attackCenterX + halfWidth;
+      const attackBottom = attackCenterY - halfHeight;
+      const attackTop = attackCenterY + halfHeight;
 
       // Check AABB collision
       const isHit =

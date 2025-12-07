@@ -25,6 +25,9 @@ let previewModel = null;
 let animationId = null;
 let isInitialized = false;
 
+// Reusable loader instance
+const gltfLoader = new GLTFLoader();
+
 // UI elements
 let modelNameEl = null;
 let prevBtn = null;
@@ -116,10 +119,9 @@ function loadPreviewModel(index) {
     previewModel = null;
   }
 
-  const loader = new GLTFLoader();
   const modelData = AVAILABLE_MODELS[index];
 
-  loader.load(
+  gltfLoader.load(
     `${BASE_PATH}models/${modelData.file}`,
     (gltf) => {
       previewModel = gltf.scene;

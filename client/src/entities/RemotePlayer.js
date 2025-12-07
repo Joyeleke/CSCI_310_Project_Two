@@ -5,6 +5,12 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+// Base path for assets (matches vite.config.js base)
+const BASE_PATH = import.meta.env.BASE_URL || '/';
+
+// Shared loader instance
+const gltfLoader = new GLTFLoader();
+
 export default class RemotePlayer {
   constructor(width, height, depth, color = 0xff6600) {
     this.width = width;
@@ -47,10 +53,8 @@ export default class RemotePlayer {
    * Load the player 3D model with color tint
    */
   loadModel() {
-    const loader = new GLTFLoader();
-
-    loader.load(
-      "/CSCI_310_Project_Two/models/player.glb",
+    gltfLoader.load(
+      `${BASE_PATH}models/player.glb`,
       (gltf) => {
         this.model = gltf.scene;
 

@@ -330,7 +330,7 @@ export function initScene() {
   player1.add(scene, playerStartPositionX, playerStartPositionY);
 
   // Create ground
-  ground = new Platform(groundWidth, groundHeight, groundColor, 7);
+  ground = new Platform(groundWidth, groundHeight, groundColor, 7, 0); // level 0 for minimal ground texture
   ground.add(scene, 0, groundPositionY);
   setGroundPlatform(ground);
   getPlatforms().push(ground);

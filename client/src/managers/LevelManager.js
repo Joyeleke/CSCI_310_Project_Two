@@ -40,8 +40,8 @@ export function spawnLevel(scene, levelNumber) {
       // Create a spike platform
       new_platform = new Spike(width, height);
     } else {
-      // Create a normal platform
-      new_platform = new Platform(width, height, level.color);
+      // Create a normal platform with level-based texture
+      new_platform = new Platform(width, height, level.color, 2, levelNumber);
     }
 
     new_platform.add(scene, x, yRelative + level.startY + groundPositionY + 1);
@@ -52,7 +52,8 @@ export function spawnLevel(scene, levelNumber) {
   if (level.walls) {
     for (let wallData of level.walls) {
       const [x, yRelative, width, height] = wallData;
-      const new_wall = new Wall(width, height, level.color);
+      // Create a wall with level-based texture
+      const new_wall = new Wall(width, height, level.color, 2, levelNumber);
 
       new_wall.add(scene, x, yRelative + level.startY + groundPositionY + 1);
       platforms.push(new_wall);
