@@ -14,6 +14,7 @@ import * as UIManager from './managers/UIManager.js';
 import * as LevelManager from './managers/LevelManager.js';
 import * as MultiplayerManager from './managers/MultiplayerManager.js';
 import * as ModelPreviewManager from './managers/ModelPreviewManager.js';
+import { musicManager } from './managers/MusicManager.js';
 import { setupInputHandlers } from './managers/InputManager.js';
 import { startGameLoop } from './game/GameLoop.js';
 
@@ -41,6 +42,41 @@ LevelManager.spawnLevel(scene, 1);
 // Show initial overlay
 UIManager.showOverlay();
 gameState.canMove = false;
+
+// ========================================
+// MUSIC SETUP
+// ========================================
+
+// Set up volume slider
+const volumeSlider = document.getElementById('volume-slider');
+const volumeValue = document.getElementById('volume-value');
+
+if (volumeSlider && volumeValue) {
+  // Set initial value from saved volume
+  const savedVolume = Math.round(musicManager.getVolume() * 100);
+  volumeSlider.value = savedVolume;
+  volumeValue.textContent = `${savedVolume}%`;
+
+  // Handle volume changes
+  volumeSlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value, 10);
+    musicManager.setVolume(value / 100);
+    volumeValue.textContent = `${value}%`;
+  });
+}
+
+// Start music on first user interaction (to avoid autoplay restrictions)
+let musicStarted = false;
+function startMusicOnInteraction() {
+  if (!musicStarted) {
+    musicManager.start();
+    musicStarted = true;
+  }
+}
+
+// Listen for user interactions to start music
+document.addEventListener('click', startMusicOnInteraction, { once: true });
+document.addEventListener('keydown', startMusicOnInteraction, { once: true });
 
 // ========================================
 // GAME CONTROL FUNCTIONS

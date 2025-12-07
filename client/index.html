@@ -204,6 +204,37 @@
         padding: 24px;
       "
     >
+      <!-- Volume Control - Top Right -->
+      <div
+        id="volume-control"
+        style="
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(0, 0, 0, 0.4);
+          padding: 8px 12px;
+          border-radius: 8px;
+        "
+      >
+        <span style="font-size: 16px;">🔊</span>
+        <input
+          type="range"
+          id="volume-slider"
+          min="0"
+          max="100"
+          value="50"
+          style="
+            width: 100px;
+            cursor: pointer;
+            accent-color: #4fc3f7;
+          "
+        />
+        <span id="volume-value" style="font-size: 12px; min-width: 30px;">50%</span>
+      </div>
+
       <div>
         <h1 id="overlay-title" style="margin: 0 0 12px 0; font-size: 28px">
           Blocky's Big Adventure
