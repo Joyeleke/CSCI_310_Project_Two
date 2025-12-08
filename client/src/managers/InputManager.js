@@ -134,8 +134,8 @@ export function setupInputHandlers(callbacks = {}) {
 
   // Keyboard down events
   window.addEventListener("keydown", (e) => {
-    // Prevent default scrolling for arrow keys
-    if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+    // Prevent default scrolling for arrow keys and space
+    if (e.code === "ArrowUp" || e.code === "ArrowDown" || e.code === "Space") {
       e.preventDefault();
     }
 
@@ -150,11 +150,12 @@ export function setupInputHandlers(callbacks = {}) {
       }
     }
 
-    // Space: Start or resume game
+    // Space: Start or resume game (only when paused, not during gameplay)
     if (gameState.isPaused && e.code === "Space") {
       if (gameState.isPauseMenuOpen) {
         if (onResume) onResume();
-      } else {
+      } else if (gameState.hasWon || !gameState.canMove) {
+        // Only start/restart if won or at start screen
         if (onStart) onStart();
       }
     }
@@ -169,8 +170,8 @@ export function setupInputHandlers(callbacks = {}) {
   window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
 
-    // Track jump key release for double jump
-    if (e.code === "KeyW" || e.code === "ArrowUp") {
+    // Track jump key release for double jump (W, Up Arrow, or Space)
+    if (e.code === "KeyW" || e.code === "ArrowUp" || e.code === "Space") {
       gameState.jumpKeyReleased = true;
     }
 

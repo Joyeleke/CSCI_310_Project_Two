@@ -98,6 +98,9 @@ class NetworkManager {
 
     /** @type {Function|null} Called when a player changes their skin */
     this.onPlayerSkinChanged = null;
+
+    /** @type {Function|null} Called when a player performs an attack (for visual feedback) */
+    this.onPlayerAttack = null;
   }
 
   /**
@@ -174,6 +177,11 @@ class NetworkManager {
       this.socket.on("playerSkinChanged", (data) => {
         console.log("[Network] Player skin changed:", data);
         if (this.onPlayerSkinChanged) this.onPlayerSkinChanged(data);
+      });
+
+      this.socket.on("playerAttack", (data) => {
+        console.log("[Network] Player attack:", data);
+        if (this.onPlayerAttack) this.onPlayerAttack(data);
       });
     });
   }

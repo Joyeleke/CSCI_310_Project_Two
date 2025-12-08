@@ -77,6 +77,48 @@ export default class RemotePlayer {
     // Load the 3D model based on skinId
     this.model = null;
     this.loadModel();
+
+    // Create attack indicator particles
+    this.attackIndicator = null;
+    this.attackParticles = [];
+    this.isAttacking = false;
+    this.attackDirection = null;
+    this.attackStartTime = 0;
+    this.createAttackIndicator();
+  }
+
+  /**
+   * Creates the attack particle system for this remote player.
+   * @private
+   */
+  createAttackIndicator() {
+    this.attackIndicator = new THREE.Group();
+    this.attackIndicator.visible = false;
+    this.group.add(this.attackIndicator);
+
+    // Pre-create particle meshes for the attack effect
+    const particleCount = 18;
+    const particleGeometry = new THREE.SphereGeometry(0.15, 6, 6);
+
+    for (let i = 0; i < particleCount; i++) {
+      const particleMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color().setHSL(0, 0.9, 0.5 + Math.random() * 0.2), // Red particles
+        transparent: true,
+        opacity: 0.9
+      });
+      const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+      particle.userData = {
+        baseX: 0,
+        baseY: 0,
+        offsetX: (Math.random() - 0.5) * 1.2,
+        offsetY: (Math.random() - 0.5) * 2.0,
+        offsetZ: (Math.random() - 0.5) * 0.6,
+        speed: 0.5 + Math.random() * 0.5,
+        phase: Math.random() * Math.PI * 2
+      };
+      this.attackIndicator.add(particle);
+      this.attackParticles.push(particle);
+    }
   }
 
   /**
@@ -158,6 +200,34 @@ export default class RemotePlayer {
   }
 
   /**
+   * Show attack particles in the specified direction.
+   * @param {Object} direction - Attack direction { x, y }
+   */
+  showAttack(direction) {
+    if (!direction) return;
+
+    this.isAttacking = true;
+    this.attackDirection = direction;
+    this.attackStartTime = performance.now();
+
+    if (this.attackIndicator) {
+      this.attackIndicator.visible = true;
+    }
+  }
+
+  /**
+   * Hide the attack particles.
+   */
+  hideAttack() {
+    this.isAttacking = false;
+    this.attackDirection = null;
+
+    if (this.attackIndicator) {
+      this.attackIndicator.visible = false;
+    }
+  }
+
+  /**
    * Update the remote player's position using interpolation
    */
   update() {
@@ -180,6 +250,48 @@ export default class RemotePlayer {
       this.group.position.y += dy * this.lerpFactor;
     } else {
       this.group.position.y = this.targetY;
+    }
+
+    // Update attack particles animation
+    if (this.isAttacking && this.attackIndicator && this.attackDirection) {
+      const ATTACK_DURATION = 200; // ms
+      const elapsed = performance.now() - this.attackStartTime;
+
+      if (elapsed < ATTACK_DURATION) {
+        const time = performance.now() * 0.01;
+        const direction = this.attackDirection;
+
+        if (direction.x !== 0) {
+          // Horizontal attack
+          this.attackParticles.forEach((particle, i) => {
+            const data = particle.userData;
+            const spread = Math.sin(time * data.speed + data.phase) * 0.3;
+            particle.position.set(
+              direction.x * (1.0 + Math.abs(data.offsetX) * 0.6) + spread * direction.x,
+              data.offsetY,
+              data.offsetZ
+            );
+            particle.scale.setScalar(1.0 + Math.sin(time * data.speed + i) * 0.4);
+            particle.material.opacity = 0.7 + Math.sin(time * data.speed) * 0.3;
+          });
+        } else {
+          // Vertical attack
+          this.attackParticles.forEach((particle, i) => {
+            const data = particle.userData;
+            const spread = Math.sin(time * data.speed + data.phase) * 0.3;
+            particle.position.set(
+              data.offsetX,
+              direction.y * (1.0 + Math.abs(data.offsetY) * 0.4) + spread * direction.y,
+              data.offsetZ
+            );
+            particle.scale.setScalar(1.0 + Math.sin(time * data.speed + i) * 0.4);
+            particle.material.opacity = 0.7 + Math.sin(time * data.speed) * 0.3;
+          });
+        }
+      } else {
+        // Attack finished
+        this.hideAttack();
+      }
     }
   }
 

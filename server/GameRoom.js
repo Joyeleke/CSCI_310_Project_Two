@@ -245,6 +245,14 @@ export default class GameRoom {
     const { x, y, direction } = data;
     const currentTime = Date.now();
 
+    // Broadcast attack to other players so they can see the attack animation
+    attacker.socket.to(this.id).emit('playerAttack', {
+      attackerId: attackerId,
+      x: x,
+      y: y,
+      direction: direction
+    });
+
     // Calculate attack hitbox center - larger offset
     let attackCenterX = x;
     let attackCenterY = y;

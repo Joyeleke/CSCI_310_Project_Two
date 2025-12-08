@@ -186,7 +186,7 @@ function gameLoop() {
   }
 
   // Jump
-  if ((keys["KeyW"] || keys["ArrowUp"]) && gameState.canMove && gameState.jumpKeyReleased) {
+  if ((keys["KeyW"] || keys["ArrowUp"] || keys["Space"]) && gameState.canMove && gameState.jumpKeyReleased) {
     // Wall jump (when on wall)
     if (gameState.isOnWall && gameState.canWallJump) {
       gameState.velocityY = gameState.jumpStrength;
@@ -218,7 +218,7 @@ function gameLoop() {
   }
 
   // Gliding mechanics - allow gliding when falling (not on wall, not on ground)
-  if ((keys["KeyW"] || keys["ArrowUp"]) && !gameState.isOnGround && !gameState.isOnWall && gameState.velocityY <= 0 && gameState.canMove) {
+  if ((keys["KeyW"] || keys["ArrowUp"] || keys["Space"]) && !gameState.isOnGround && !gameState.isOnWall && gameState.velocityY <= 0 && gameState.canMove) {
     gameState.isGliding = true;
 
     // Track glide direction based on horizontal movement

@@ -190,6 +190,13 @@ function setupNetworkHandlers() {
     }
   };
 
+  networkManager.onPlayerAttack = (data) => {
+    // Show attack particles on the remote player
+    if (multiplayerState.remotePlayer && data.attackerId !== networkManager.playerId) {
+      multiplayerState.remotePlayer.showAttack(data.direction);
+    }
+  };
+
   networkManager.onCountdown = (data) => {
     multiplayerState.state = 'countdown';
     UIManager.hideConnectionOverlay();
