@@ -226,10 +226,16 @@ class MusicManager {
 // Export singleton instance
 export const musicManager = new MusicManager();
 
-// List of available tracks - add more tracks here as needed
-const AVAILABLE_TRACKS = [
-  'Midnight Rendezvous.mp3',
-];
+// Dynamically import all music files from the music directory using Vite's glob import
+const musicFiles = import.meta.glob('/public/music/*.mp3', { eager: true, as: 'url' });
+
+// Extract just the filenames from the full paths
+const AVAILABLE_TRACKS = Object.keys(musicFiles).map(path => {
+  // Extract filename from path like "/public/music/song.mp3" -> "song.mp3"
+  return path.split('/').pop();
+});
+
+console.log('[Music] Available tracks:', AVAILABLE_TRACKS);
 
 // Initialize with available tracks
 musicManager.init(AVAILABLE_TRACKS);
