@@ -36,6 +36,8 @@ import RemotePlayer from '../entities/RemotePlayer.js';
 import { networkManager } from '../network/NetworkManager.js';
 import { gameState, resetPhysicsState } from '../state/gameState.js';
 import { multiplayerState, resetMultiplayerState } from '../state/multiplayerState.js';
+import { getSelectedModelName, getSelectedModelPath } from './ModelPreviewManager.js';
+import * as SceneManager from './SceneManager.js';
 import {
   SERVER_URL,
   playerWidth,
@@ -111,6 +113,10 @@ export async function startMultiplayer() {
   UIManager.hideOverlay();
   UIManager.showConnectionOverlay('Connecting to server...');
 
+  // Apply the selected character model to local player
+  const selectedModelPath = getSelectedModelPath();
+  SceneManager.changePlayerModel(selectedModelPath);
+
   try {
     // Connect to server
     await networkManager.connect(SERVER_URL);
@@ -118,22 +124,23 @@ export async function startMultiplayer() {
     // Set up network event handlers
     setupNetworkHandlers();
 
-    // Join a game
+    // Join a game with selected skin
     multiplayerState.state = 'waiting';
     UIManager.showConnectionOverlay('Waiting for opponent...');
     UIManager.showCancelMatchmaking();
 
-    const result = await networkManager.joinGame();
+    const skinId = getSelectedModelName().toLowerCase();
+    const result = await networkManager.joinGame(skinId);
 
     // Set up local player position based on server assignment
     multiplayerState.localPlayerNumber = result.playerNumber;
     player1.position.x = result.startX;
     player1.position.y = playerStartPositionY;
 
-    // If there are already other players, create remote player
+    // If there are already other players, create remote player with their skin
     for (const p of result.players) {
       if (p.id !== result.playerId) {
-        createRemotePlayer(p.x, p.y);
+        createRemotePlayer(p.x, p.y, p.skinId);
       }
     }
 
@@ -162,7 +169,7 @@ export async function startMultiplayer() {
 function setupNetworkHandlers() {
   networkManager.onPlayerJoined = (playerData) => {
     console.log('Opponent joined:', playerData);
-    createRemotePlayer(playerData.x, playerData.y);
+    createRemotePlayer(playerData.x, playerData.y, playerData.skinId);
   };
 
   networkManager.onPlayerLeft = (data) => {
@@ -176,6 +183,13 @@ function setupNetworkHandlers() {
     }
   };
 
+  networkManager.onPlayerSkinChanged = (data) => {
+    console.log('Opponent skin changed:', data);
+    if (multiplayerState.remotePlayer && data.id !== networkManager.playerId) {
+      multiplayerState.remotePlayer.setSkin(data.skinId);
+    }
+  };
+
   networkManager.onCountdown = (data) => {
     multiplayerState.state = 'countdown';
     UIManager.hideConnectionOverlay();
@@ -186,7 +200,7 @@ function setupNetworkHandlers() {
     gameState.canMove = false;
   };
 
-  networkManager.onRaceStart = (data) => {
+  networkManager.onRaceStart = () => {
     multiplayerState.state = 'racing';
     UIManager.hideCountdown();
     UIManager.showOpponentHud();
@@ -195,7 +209,8 @@ function setupNetworkHandlers() {
     gameState.isPaused = false;
     gameState.canMove = true;
     gameState.hasWon = false;
-    gameState.gameStartTime = data.timestamp;
+    // Use local time for accurate timer display
+    gameState.gameStartTime = performance.now();
     gameState.totalPausedTime = 0;
 
     // Reset physics state
@@ -229,9 +244,9 @@ function setupNetworkHandlers() {
   };
 
   networkManager.onKnockback = (data) => {
-    // Apply knockback to local player
+    // Apply knockback to local player - increased effect
     gameState.velocityY = data.y;
-    player1.position.x += data.x * 0.3; // Apply some immediate horizontal displacement
+    player1.position.x += data.x * 0.5; // Apply stronger immediate horizontal displacement
 
     // Flash the local player red to indicate being hit
     if (player1.group) {
@@ -292,12 +307,13 @@ function setupNetworkHandlers() {
  * Creates a remote player entity at the specified position.
  * @param {number} x - Initial X position
  * @param {number} y - Initial Y position
+ * @param {string} skinId - The skin/model ID for the remote player
  */
-export function createRemotePlayer(x, y) {
+export function createRemotePlayer(x, y, skinId = "player") {
   if (multiplayerState.remotePlayer) {
     multiplayerState.remotePlayer.remove(scene);
   }
-  multiplayerState.remotePlayer = new RemotePlayer(playerWidth, playerHeight, playerDepth);
+  multiplayerState.remotePlayer = new RemotePlayer(playerWidth, playerHeight, playerDepth, skinId);
   multiplayerState.remotePlayer.add(scene, x, y);
 }
 
@@ -345,24 +361,29 @@ export function returnToMenuFromMultiplayer() {
 export function rematch() {
   UIManager.hideRaceResult();
 
+  // Apply the selected character model to local player
+  const selectedModelPath = getSelectedModelPath();
+  SceneManager.changePlayerModel(selectedModelPath);
+
   // Reset game state for new match
   player1.position.x = multiplayerState.localPlayerNumber === 1 ? -2 : 2;
   player1.position.y = playerStartPositionY;
   gameState.velocityY = 0;
   gameState.isOnGround = false;
 
-  // Request to join a new game
+  // Request to join a new game with current skin
   multiplayerState.state = 'waiting';
   UIManager.showConnectionOverlay('Finding new opponent...');
   UIManager.showCancelMatchmaking();
 
-  networkManager.joinGame().then((result) => {
+  const skinId = getSelectedModelName().toLowerCase();
+  networkManager.joinGame(skinId).then((result) => {
     multiplayerState.localPlayerNumber = result.playerNumber;
     player1.position.x = result.startX;
 
     for (const p of result.players) {
       if (p.id !== result.playerId) {
-        createRemotePlayer(p.x, p.y);
+        createRemotePlayer(p.x, p.y, p.skinId);
       }
     }
   }).catch((error) => {

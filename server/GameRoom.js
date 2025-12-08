@@ -9,8 +9,8 @@ import GamePlayer from './GamePlayer.js';
 const ATTACK_OFFSET = 1.0; // How far the attack hitbox center is offset from player
 const ATTACK_WIDTH = 1.6; // Width of the attack hitbox (left/right from center)
 const ATTACK_HEIGHT = 2.0; // Height of the attack hitbox (top/bottom from center)
-const KNOCKBACK_X = 5; // Horizontal knockback force
-const KNOCKBACK_Y = 8; // Vertical knockback force
+const KNOCKBACK_X = 12; // Horizontal knockback force (increased from 5)
+const KNOCKBACK_Y = 15; // Vertical knockback force (increased from 8)
 const HIT_COOLDOWN = 500; // ms before player can be hit again
 
 export default class GameRoom {
@@ -26,19 +26,20 @@ export default class GameRoom {
   /**
    * Add a player to the room
    * @param {Socket} socket - The player's socket
+   * @param {string} skinId - The player's selected skin/model ID
    * @returns {Object} Join result with player info
    */
-  addPlayer(socket) {
+  addPlayer(socket, skinId = "player") {
     const playerNumber = this.players.size + 1;
     
-    const player = new GamePlayer(socket, playerNumber);
-    
+    const player = new GamePlayer(socket, playerNumber, skinId);
+
     this.players.set(socket.id, player);
     socket.join(this.id);
     socket.roomId = this.id;
     
-    console.log(`Player ${playerNumber} (${socket.id}) joined room ${this.id}`);
-    
+    console.log(`Player ${playerNumber} (${socket.id}) with skin "${skinId}" joined room ${this.id}`);
+
     // Notify other players in the room
     socket.to(this.id).emit('playerJoined', player.toJSON());
     
@@ -54,6 +55,23 @@ export default class GameRoom {
       players: this.getPlayersArray(),
       state: this.state
     };
+  }
+
+  /**
+   * Update a player's skin and broadcast to others
+   * @param {string} socketId - The player's socket ID
+   * @param {string} skinId - The new skin ID
+   */
+  updatePlayerSkin(socketId, skinId) {
+    const player = this.players.get(socketId);
+    if (player) {
+      player.skinId = skinId;
+      // Broadcast skin change to all players in the room
+      this.io.to(this.id).emit('playerSkinChanged', {
+        id: socketId,
+        skinId: skinId
+      });
+    }
   }
 
   /**

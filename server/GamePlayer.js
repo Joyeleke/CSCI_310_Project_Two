@@ -4,10 +4,11 @@
  */
 
 export default class GamePlayer {
-  constructor(socket, playerNumber) {
+  constructor(socket, playerNumber, skinId = "player") {
     this.id = socket.id;
     this.socket = socket;
     this.playerNumber = playerNumber;
+    this.skinId = skinId; // Character skin/model ID
     this.x = playerNumber === 1 ? -2 : 2;
     this.y = 0;
     this.state = {}; // Additional state info (e.g. jumping, moving)
@@ -57,6 +58,7 @@ export default class GamePlayer {
     return {
       id: this.id,
       playerNumber: this.playerNumber,
+      skinId: this.skinId,
       x: this.x,
       y: this.y,
       state: this.state,

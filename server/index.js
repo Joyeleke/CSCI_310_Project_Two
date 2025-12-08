@@ -35,20 +35,39 @@ io.on("connection", (socket) => {
   /**
    * Player requests to join a game
    * Finds an available room or creates a new one
+   * @param {Object|Function} data - Either {skinId} object or callback (backwards compat)
+   * @param {Function} callback - Response callback
    */
-  socket.on("joinGame", (callback) => {
+  socket.on("joinGame", (data, callback) => {
     try {
-      const room = gameState.findOrCreateRoom();
-      const result = room.addPlayer(socket);
+      // Handle both old format (callback only) and new format (data + callback)
+      const skinId = typeof data === "object" ? data.skinId : "player";
+      const cb = typeof callback === "function" ? callback : (typeof data === "function" ? data : null);
 
-      if (typeof callback === "function") {
-        callback(result);
+      const room = gameState.findOrCreateRoom();
+      const result = room.addPlayer(socket, skinId);
+
+      if (cb) {
+        cb(result);
       }
     } catch (error) {
       console.error("Error joining game:", error);
-      if (typeof callback === "function") {
-        callback({ error: "Failed to join game" });
+      const cb = typeof callback === "function" ? callback : (typeof data === "function" ? data : null);
+      if (cb) {
+        cb({ error: "Failed to join game" });
       }
+    }
+  });
+
+  /**
+   * Player updates their skin selection
+   */
+  socket.on("updateSkin", (data) => {
+    if (!socket.roomId) return;
+
+    const room = gameState.getRoom(socket.roomId);
+    if (room) {
+      room.updatePlayerSkin(socket.id, data.skinId);
     }
   });
 

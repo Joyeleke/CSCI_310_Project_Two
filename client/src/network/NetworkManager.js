@@ -95,6 +95,9 @@ class NetworkManager {
 
     /** @type {Function|null} Called when any player gets hit (for visual feedback) */
     this.onPlayerHit = null;
+
+    /** @type {Function|null} Called when a player changes their skin */
+    this.onPlayerSkinChanged = null;
   }
 
   /**
@@ -167,23 +170,29 @@ class NetworkManager {
         console.log("[Network] Player hit:", data);
         if (this.onPlayerHit) this.onPlayerHit(data);
       });
+
+      this.socket.on("playerSkinChanged", (data) => {
+        console.log("[Network] Player skin changed:", data);
+        if (this.onPlayerSkinChanged) this.onPlayerSkinChanged(data);
+      });
     });
   }
 
   /**
    * Request to join a game room
    * Server will either put you in an existing room or create a new one
+   * @param {string} skinId - The player's selected skin/model ID
    */
-  joinGame() {
+  joinGame(skinId = "player") {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
         reject(new Error("Not connected to server"));
         return;
       }
 
-      console.log("[Network] Requesting to join game...");
+      console.log(`[Network] Requesting to join game with skin: ${skinId}...`);
 
-      this.socket.emit("joinGame", (response) => {
+      this.socket.emit("joinGame", { skinId }, (response) => {
         if (response.error) {
           console.error("[Network] Failed to join:", response.error);
           reject(new Error(response.error));

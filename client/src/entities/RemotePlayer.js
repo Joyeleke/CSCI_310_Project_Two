@@ -40,19 +40,18 @@ export default class RemotePlayer {
    * @param {number} width - Collision box width
    * @param {number} height - Collision box height
    * @param {number} depth - Collision box depth
-   * @param {number} [color=0xff6600] - Color tint for the player model
+   * @param {string} [skinId="player"] - Skin/model ID to load
    */
-  constructor(width, height, depth, color = 0xff6600) {
+  constructor(width, height, depth, skinId = "player") {
     this.width = width;
     this.height = height;
     this.depth = depth;
-    this.color = color;
+    this.skinId = skinId;
 
+    // Invisible hitbox for collision detection only (not rendered)
     const geometry = new THREE.BoxGeometry(width, height, depth);
-    const material = new THREE.MeshStandardMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.8,
+    const material = new THREE.MeshBasicMaterial({
+      visible: false, // Hitbox is invisible - only show the model
     });
     this.hitbox = new THREE.Mesh(geometry, material);
 
@@ -75,17 +74,27 @@ export default class RemotePlayer {
     /** Velocity from network (used for prediction if needed) */
     this.velocityY = 0;
 
-    // Load the 3D model
+    // Load the 3D model based on skinId
     this.model = null;
     this.loadModel();
   }
 
   /**
-   * Load the player 3D model with color tint
+   * Load the player 3D model based on skinId
    */
   loadModel() {
+    // Map skinId to model file
+    const skinToFile = {
+      'player': 'player.glb',
+      'cookie': 'cookie.glb',
+      'tanjiro': 'Tanjiro Kamado.glb',
+      'llama': 'llama.gltf',
+    };
+
+    const modelFile = skinToFile[this.skinId.toLowerCase()] || 'player.glb';
+
     gltfLoader.load(
-      `${BASE_PATH}models/player.glb`,
+      `${BASE_PATH}models/${modelFile}`,
       (gltf) => {
         this.model = gltf.scene;
 
@@ -100,11 +109,14 @@ export default class RemotePlayer {
         this.model.scale.set(scaleX, scaleY, scaleZ);
         this.model.position.y = 0;
 
-        // Apply color tint to distinguish from local player
+        // Apply model-specific rotations (e.g., llama needs 180 degree rotation)
+        if (this.skinId.toLowerCase() === 'llama') {
+          this.model.rotation.y = Math.PI;
+        }
+
+        // Enable shadows on the model
         this.model.traverse((child) => {
           if (child.isMesh) {
-            child.material = child.material.clone();
-            child.material.color.setHex(this.color);
             child.castShadow = true;
           }
         });
@@ -176,6 +188,25 @@ export default class RemotePlayer {
    */
   getHeight() {
     return this.group.position.y;
+  }
+
+  /**
+   * Update the skin/model of this remote player
+   * @param {string} skinId - The new skin ID to load
+   */
+  setSkin(skinId) {
+    if (this.skinId === skinId) return; // No change needed
+
+    this.skinId = skinId;
+
+    // Remove old model if exists
+    if (this.model) {
+      this.group.remove(this.model);
+      this.model = null;
+    }
+
+    // Load new model
+    this.loadModel();
   }
 
   /**
